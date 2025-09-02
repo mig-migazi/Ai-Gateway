@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Gateway Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-left: 4px solid #3498db;
+        }
+        
+        .card h3 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            font-size: 1.3em;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .status-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3498db;
+            margin: 5px 0;
+        }
+        
+        .status-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        .ai-decisions {
+            background: #e8f5e8;
+            border-left-color: #27ae60;
+        }
+        
+        .ai-decisions h3 {
+            color: #27ae60;
+        }
+        
+        .decision-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 3px solid #27ae60;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .decision-time {
+            color: #7f8c8d;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+        
+        .decision-action {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .decision-reasoning {
+            color: #555;
+            font-size: 0.9em;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        .connection-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .connected {
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+        
+        .disconnected {
+            background: #e74c3c;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .log-container {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        
+        .log-info { background: rgba(52, 152, 219, 0.2); }
+        .log-success { background: rgba(39, 174, 96, 0.2); }
+        .log-warning { background: rgba(241, 196, 15, 0.2); }
+        .log-error { background: rgba(231, 76, 60, 0.2); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Gateway Dashboard</h1>
+            <p>Real-time Industrial Protocol Intelligence & Data Flow Visualization</p>
+            <div style="margin-top: 15px;">
+                <span class="connection-status" id="restStatus"></span>
+                <span>REST Simulator</span>
+                <span class="connection-status" id="mcpStatus" style="margin-left: 20px;"></span>
+                <span>MCP Server</span>
+            </div>
+        </div>
+        
+        <div class="dashboard-grid">
+            <!-- Real-time Data -->
+            <div class="card">
+                <h3>📊 Real-time Sensor Data</h3>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-value" id="temperature">--</div>
+                        <div class="status-label">Temperature (°F)</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="humidity">--</div>
+                        <div class="status-label">Humidity (%)</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="pressure">--</div>
+                        <div class="status-label">Pressure (hPa)</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="energy">--</div>
+                        <div class="status-label">Energy (W)</div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-success" onclick="startStreaming()">▶️ Start Stream</button>
+                    <button class="btn btn-danger" onclick="stopStreaming()">⏹️ Stop Stream</button>
+                    <button class="btn btn-primary" onclick="testMCPQuery()">🧠 Test AI Query</button>
+                </div>
+            </div>
+            
+            <!-- AI Decisions -->
+            <div class="card ai-decisions">
+                <h3>🧠 AI Decision Engine</h3>
+                <div id="aiDecisions">
+                    <div class="decision-item">
+                        <div class="decision-time">Waiting for AI decisions...</div>
+                        <div class="decision-action">System Ready</div>
+                        <div class="decision-reasoning">AI Gateway is initialized and ready to process queries</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Data Trends Chart -->
+            <div class="card full-width">
+                <h3>📈 Data Trends & Analytics</h3>
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- System Log -->
+            <div class="card full-width">
+                <h3>📝 System Activity Log</h3>
+                <div class="log-container" id="systemLog">
+                    <div class="log-entry log-info">[INFO] Dashboard initialized</div>
+                    <div class="log-entry log-info">[INFO] Waiting for data stream...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let eventSource = null;
+        let trendsChart = null;
+        let dataHistory = [];
+        let aiDecisions = [];
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeChart();
+            checkConnections();
+            addLogEntry('Dashboard loaded successfully', 'success');
+        });
+        
+        // Initialize trends chart
+        function initializeChart() {
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+            trendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Temperature (°F)',
+                            data: [],
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Humidity (%)',
+                            data: [],
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Energy (W)',
+                            data: [],
+                            borderColor: '#f39c12',
+                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Check connection status
+        async function checkConnections() {
+            try {
+                // Check REST simulator
+                const restResponse = await fetch('http://localhost:8000/api/stream/status');
+                if (restResponse.ok) {
+                    document.getElementById('restStatus').className = 'connection-status connected';
+                    addLogEntry('REST Simulator connected', 'success');
+                } else {
+                    document.getElementById('restStatus').className = 'connection-status disconnected';
+                    addLogEntry('REST Simulator connection failed', 'error');
+                }
+            } catch (error) {
+                document.getElementById('restStatus').className = 'connection-status disconnected';
+                addLogEntry(`REST Simulator error: ${error.message}`, 'error');
+            }
+            
+            // Check MCP server (simplified)
+            try {
+                const mcpResponse = await fetch('http://localhost:8081/api/mcp/status');
+                if (mcpResponse.ok) {
+                    document.getElementById('mcpStatus').className = 'connection-status connected';
+                    addLogEntry('MCP Server connected', 'success');
+                } else {
+                    document.getElementById('mcpStatus').className = 'connection-status disconnected';
+                    addLogEntry('MCP Server connection failed', 'error');
+                }
+            } catch (error) {
+                document.getElementById('mcpStatus').className = 'connection-status disconnected';
+                addLogEntry(`MCP Server error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Start data streaming
+        function startStreaming() {
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            try {
+                eventSource = new EventSource('http://localhost:8000/api/stream');
+                
+                eventSource.onopen = function(event) {
+                    addLogEntry('Data stream connection opened', 'success');
+                    document.getElementById('restStatus').className = 'connection-status connected';
+                };
+                
+                eventSource.onmessage = function(event) {
+                    try {
+                        // Handle Server-Sent Events format
+                        let dataStr = event.data;
+                        if (dataStr.startsWith('data: ')) {
+                            dataStr = dataStr.substring(6); // Remove 'data: ' prefix
+                        }
+                        const data = JSON.parse(dataStr);
+                        updateDashboard(data);
+                        addLogEntry(`Received data: ${data.temperature}°F, ${data.humidity}%`, 'info');
+                    } catch (error) {
+                        addLogEntry(`Error parsing data: ${error.message}`, 'error');
+                        console.log('Raw event data:', event.data);
+                    }
+                };
+                
+                eventSource.onerror = function(error) {
+                    addLogEntry('Stream connection error - check if REST simulator is running', 'error');
+                    document.getElementById('restStatus').className = 'connection-status disconnected';
+                };
+                
+                addLogEntry('Attempting to start data streaming...', 'info');
+            } catch (error) {
+                addLogEntry(`Failed to start streaming: ${error.message}`, 'error');
+            }
+        }
+        
+        // Stop data streaming
+        function stopStreaming() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                addLogEntry('Data streaming stopped', 'warning');
+            }
+        }
+        
+        // Update dashboard with new data
+        function updateDashboard(data) {
+            // Update status values
+            document.getElementById('temperature').textContent = data.temperature;
+            document.getElementById('humidity').textContent = data.humidity;
+            document.getElementById('pressure').textContent = data.pressure;
+            document.getElementById('energy').textContent = data.energy_usage;
+            
+            // Update chart
+            dataHistory.push(data);
+            if (dataHistory.length > 50) {
+                dataHistory.shift();
+            }
+            
+            const labels = dataHistory.map(d => new Date(d.timestamp).toLocaleTimeString());
+            const temps = dataHistory.map(d => d.temperature);
+            const humidities = dataHistory.map(d => d.humidity);
+            const energies = dataHistory.map(d => d.energy_usage);
+            
+            trendsChart.data.labels = labels;
+            trendsChart.data.datasets[0].data = temps;
+            trendsChart.data.datasets[1].data = humidities;
+            trendsChart.data.datasets[2].data = energies;
+            trendsChart.update('none');
+            
+            // Simulate AI decision making
+            simulateAIDecision(data);
+        }
+        
+        // Simulate AI decision making
+        function simulateAIDecision(data) {
+            const decisions = [
+                {
+                    action: "Temperature Analysis",
+                    reasoning: `Temperature is ${data.temperature}°F. ${data.temperature > 75 ? 'Consider cooling optimization.' : 'Temperature is within optimal range.'}`
+                },
+                {
+                    action: "Energy Optimization",
+                    reasoning: `Energy usage is ${data.energy_usage}W. ${data.energy_usage > 150 ? 'High energy consumption detected. Recommend efficiency review.' : 'Energy usage is normal.'}`
+                },
+                {
+                    action: "Humidity Control",
+                    reasoning: `Humidity is ${data.humidity}%. ${data.humidity > 60 ? 'High humidity detected. Consider dehumidification.' : 'Humidity levels are acceptable.'}`
+                }
+            ];
+            
+            // Randomly select a decision to show
+            const decision = decisions[Math.floor(Math.random() * decisions.length)];
+            
+            addAIDecision(decision.action, decision.reasoning);
+        }
+        
+        // Add AI decision to display
+        function addAIDecision(action, reasoning) {
+            const decisionsContainer = document.getElementById('aiDecisions');
+            const decisionItem = document.createElement('div');
+            decisionItem.className = 'decision-item';
+            
+            const time = new Date().toLocaleTimeString();
+            decisionItem.innerHTML = `
+                <div class="decision-time">${time}</div>
+                <div class="decision-action">${action}</div>
+                <div class="decision-reasoning">${reasoning}</div>
+            `;
+            
+            decisionsContainer.insertBefore(decisionItem, decisionsContainer.firstChild);
+            
+            // Keep only last 5 decisions
+            while (decisionsContainer.children.length > 5) {
+                decisionsContainer.removeChild(decisionsContainer.lastChild);
+            }
+        }
+        
+        // Test MCP query
+        async function testMCPQuery() {
+            const queries = [
+                "What's the current temperature?",
+                "Is the energy usage optimal?",
+                "Should I adjust the HVAC settings?",
+                "What's the humidity trend?",
+                "Are there any anomalies in the data?"
+            ];
+            
+            const query = queries[Math.floor(Math.random() * queries.length)];
+            addLogEntry(`Testing MCP query: "${query}"`, 'info');
+            
+            try {
+                // Call the actual MCP API
+                const response = await fetch('http://localhost:8081/api/mcp/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    addLogEntry(`MCP Response: ${result.response}`, 'success');
+                    addAIDecision("MCP Query Processing", result.response);
+                } else {
+                    addLogEntry(`MCP API error: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addLogEntry(`MCP query failed: ${error.message}`, 'error');
+                
+                // Fallback to simulation
+                setTimeout(() => {
+                    const responses = [
+                        "AI analyzed the query and determined optimal protocol: REST API",
+                        "Local AI engine processed query in 0.1ms",
+                        "Dynamic protocol implementation generated successfully",
+                        "Device communication established via intelligent protocol selection"
+                    ];
+                    
+                    const response = responses[Math.floor(Math.random() * responses.length)];
+                    addLogEntry(`Simulated MCP Response: ${response}`, 'success');
+                    addAIDecision("MCP Query Processing (Simulated)", response);
+                }, 1000);
+            }
+        }
+        
+        // Add log entry
+        function addLogEntry(message, type = 'info') {
+            const logContainer = document.getElementById('systemLog');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            logEntry.textContent = `[${timestamp}] [${type.toUpperCase()}] ${message}`;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Keep only last 50 log entries
+            while (logContainer.children.length > 50) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+        
+        // Auto-start streaming when page loads
+        setTimeout(() => {
+            startStreaming();
+        }, 2000);
+    </script>
+</body>
+</html>
