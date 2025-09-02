@@ -180,12 +180,34 @@
             transform: translateY(-2px);
         }
         
+        select.btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        
+        select.btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+        
+        select.btn option {
+            background: white;
+            color: #333;
+            padding: 8px;
+        }
+        
         .connection-status {
             display: inline-block;
             width: 12px;
             height: 12px;
             border-radius: 50%;
             margin-right: 8px;
+            background: #95a5a6; /* Default gray state */
         }
         
         .connected {
@@ -195,6 +217,11 @@
         
         .disconnected {
             background: #e74c3c;
+        }
+        
+        .checking {
+            background: #f39c12;
+            animation: pulse 1s infinite;
         }
         
         @keyframes pulse {
@@ -238,8 +265,15 @@
             <div style="margin-top: 15px;">
                 <span class="connection-status" id="restStatus"></span>
                 <span>REST Simulator</span>
+                <span id="restStatusText" style="margin-left: 5px; font-size: 0.9em; color: #666;">Checking...</span>
+                
+                <span class="connection-status" id="bacnetStatus" style="margin-left: 20px;"></span>
+                <span>BACnet Simulator</span>
+                <span id="bacnetStatusText" style="margin-left: 5px; font-size: 0.9em; color: #666;">Checking...</span>
+                
                 <span class="connection-status" id="mcpStatus" style="margin-left: 20px;"></span>
                 <span>MCP Server</span>
+                <span id="mcpStatusText" style="margin-left: 5px; font-size: 0.9em; color: #666;">Checking...</span>
             </div>
         </div>
         
@@ -269,7 +303,46 @@
                 <div class="controls">
                     <button class="btn btn-success" onclick="startStreaming()">▶️ Start Stream</button>
                     <button class="btn btn-danger" onclick="stopStreaming()">⏹️ Stop Stream</button>
-                    <button class="btn btn-primary" onclick="testMCPQuery()">🧠 Test AI Query</button>
+                    <select id="aiQueryDropdown" class="btn btn-primary" style="padding: 8px 12px; margin-left: 10px;">
+                        <option value="">🧠 Select AI Query...</option>
+                        <option value="temperature">What's the current temperature?</option>
+                        <option value="energy">Is the energy usage optimal?</option>
+                        <option value="hvac">Should I adjust the HVAC settings?</option>
+                        <option value="humidity">What's the humidity trend?</option>
+                        <option value="anomalies">Are there any anomalies in the data?</option>
+                        <option value="bacnet">Test BACnet connection and get device information</option>
+                        <option value="protocols">Compare REST vs BACnet data</option>
+                        <option value="optimization">Suggest energy optimization strategies</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="executeSelectedQuery()" style="margin-left: 5px;">▶️ Execute</button>
+                </div>
+            </div>
+            
+            <!-- BACnet Data -->
+            <div class="card">
+                <h3>🏭 BACnet Industrial Data</h3>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-value" id="bacnetTemperature">--</div>
+                        <div class="status-label">BACnet Temp (°F)</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="bacnetHumidity">--</div>
+                        <div class="status-label">BACnet Humidity (%)</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="bacnetDeviceId">--</div>
+                        <div class="status-label">Device ID</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="bacnetStatus">--</div>
+                        <div class="status-label">Status</div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-info" onclick="testBACnetConnection()">🔗 Test BACnet</button>
+                    <button class="btn btn-warning" onclick="startBACnetPolling()">📡 Start BACnet Poll</button>
                 </div>
             </div>
             
@@ -314,8 +387,12 @@
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             initializeChart();
-            checkConnections();
             addLogEntry('Dashboard loaded successfully', 'success');
+            
+            // Wait a moment for servers to be fully ready
+            setTimeout(() => {
+                checkConnections();
+            }, 1000);
         });
         
         // Initialize trends chart
@@ -368,19 +445,53 @@
         
         // Check connection status
         async function checkConnections() {
+            // Set all status indicators to checking state
+            document.getElementById('restStatus').className = 'connection-status checking';
+            document.getElementById('restStatusText').textContent = 'Checking...';
+            document.getElementById('bacnetStatus').className = 'connection-status checking';
+            document.getElementById('bacnetStatusText').textContent = 'Checking...';
+            document.getElementById('mcpStatus').className = 'connection-status checking';
+            document.getElementById('mcpStatusText').textContent = 'Checking...';
+            
             try {
                 // Check REST simulator
                 const restResponse = await fetch('http://localhost:8000/api/stream/status');
                 if (restResponse.ok) {
                     document.getElementById('restStatus').className = 'connection-status connected';
+                    document.getElementById('restStatusText').textContent = 'Connected';
                     addLogEntry('REST Simulator connected', 'success');
                 } else {
                     document.getElementById('restStatus').className = 'connection-status disconnected';
+                    document.getElementById('restStatusText').textContent = 'Disconnected';
                     addLogEntry('REST Simulator connection failed', 'error');
                 }
             } catch (error) {
                 document.getElementById('restStatus').className = 'connection-status disconnected';
+                document.getElementById('restStatusText').textContent = 'Error';
                 addLogEntry(`REST Simulator error: ${error.message}`, 'error');
+            }
+            
+            // Check BACnet simulator
+            try {
+                const bacnetResponse = await fetch('http://localhost:8081/api/mcp/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: "Test BACnet simulator connection" })
+                });
+                
+                if (bacnetResponse.ok) {
+                    document.getElementById('bacnetStatus').className = 'connection-status connected';
+                    document.getElementById('bacnetStatusText').textContent = 'Connected';
+                    addLogEntry('BACnet Simulator connected', 'success');
+                } else {
+                    document.getElementById('bacnetStatus').className = 'connection-status disconnected';
+                    document.getElementById('bacnetStatusText').textContent = 'Disconnected';
+                    addLogEntry('BACnet Simulator connection failed', 'error');
+                }
+            } catch (error) {
+                document.getElementById('bacnetStatus').className = 'connection-status disconnected';
+                document.getElementById('bacnetStatusText').textContent = 'Error';
+                addLogEntry(`BACnet Simulator error: ${error.message}`, 'error');
             }
             
             // Check MCP server (simplified)
@@ -388,65 +499,124 @@
                 const mcpResponse = await fetch('http://localhost:8081/api/mcp/status');
                 if (mcpResponse.ok) {
                     document.getElementById('mcpStatus').className = 'connection-status connected';
+                    document.getElementById('mcpStatusText').textContent = 'Connected';
                     addLogEntry('MCP Server connected', 'success');
                 } else {
                     document.getElementById('mcpStatus').className = 'connection-status disconnected';
+                    document.getElementById('mcpStatusText').textContent = 'Disconnected';
                     addLogEntry('MCP Server connection failed', 'error');
                 }
             } catch (error) {
                 document.getElementById('mcpStatus').className = 'connection-status disconnected';
+                document.getElementById('mcpStatusText').textContent = 'Error';
                 addLogEntry(`MCP Server error: ${error.message}`, 'error');
             }
         }
         
         // Start data streaming
         function startStreaming() {
+            console.log('Start streaming button clicked');
+            addLogEntry('Start streaming button clicked', 'info');
+            
             if (eventSource) {
                 eventSource.close();
             }
             
-            try {
-                eventSource = new EventSource('http://localhost:8000/api/stream');
-                
-                eventSource.onopen = function(event) {
-                    addLogEntry('Data stream connection opened', 'success');
-                    document.getElementById('restStatus').className = 'connection-status connected';
-                };
-                
-                eventSource.onmessage = function(event) {
-                    try {
-                        // Handle Server-Sent Events format
-                        let dataStr = event.data;
-                        if (dataStr.startsWith('data: ')) {
-                            dataStr = dataStr.substring(6); // Remove 'data: ' prefix
-                        }
-                        const data = JSON.parse(dataStr);
-                        updateDashboard(data);
-                        addLogEntry(`Received data: ${data.temperature}°F, ${data.humidity}%`, 'info');
-                    } catch (error) {
-                        addLogEntry(`Error parsing data: ${error.message}`, 'error');
-                        console.log('Raw event data:', event.data);
+            // First start the streaming on the server
+            fetch('http://localhost:8000/api/stream/start', { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to start streaming: ${response.status}`);
                     }
-                };
-                
-                eventSource.onerror = function(error) {
-                    addLogEntry('Stream connection error - check if REST simulator is running', 'error');
+                    return response.json();
+                })
+                .then(data => {
+                    addLogEntry(`Streaming started: ${data.message}`, 'success');
+                    
+                    // Wait a moment for streaming to initialize
+                    setTimeout(() => {
+                        try {
+                            eventSource = new EventSource('http://localhost:8000/api/stream');
+                        
+                        eventSource.onopen = function(event) {
+                            addLogEntry('Data stream connection opened successfully', 'success');
+                            document.getElementById('restStatus').className = 'connection-status connected';
+                            console.log('EventSource opened:', event);
+                        };
+                        
+                        eventSource.onmessage = function(event) {
+                            try {
+                                // Handle Server-Sent Events format
+                                let dataStr = event.data;
+                                if (dataStr.startsWith('data: ')) {
+                                    dataStr = dataStr.substring(6); // Remove 'data: ' prefix
+                                }
+                                const data = JSON.parse(dataStr);
+                                updateDashboard(data);
+                                addLogEntry(`Received data: ${data.temperature}°F, ${data.humidity}%`, 'info');
+                            } catch (error) {
+                                addLogEntry(`Error parsing data: ${error.message}`, 'error');
+                                console.log('Raw event data:', event.data);
+                            }
+                        };
+                        
+                        eventSource.onerror = function(error) {
+                            addLogEntry(`Stream connection error (readyState: ${eventSource.readyState}) - attempting to reconnect...`, 'error');
+                            document.getElementById('restStatus').className = 'connection-status disconnected';
+                            console.log('EventSource error:', error, 'readyState:', eventSource.readyState);
+                            
+                            // Attempt to reconnect after 3 seconds
+                            setTimeout(() => {
+                                if (eventSource && eventSource.readyState === EventSource.CLOSED) {
+                                    addLogEntry('Attempting to reconnect...', 'info');
+                                    startStreaming();
+                                }
+                            }, 3000);
+                        };
+                        
+                        addLogEntry('EventSource connection established', 'info');
+                        
+                        // Monitor connection state
+                        const stateCheck = setInterval(() => {
+                            if (eventSource) {
+                                const states = ['CONNECTING', 'OPEN', 'CLOSED'];
+                                addLogEntry(`EventSource state: ${states[eventSource.readyState]}`, 'info');
+                                if (eventSource.readyState === EventSource.CLOSED) {
+                                    clearInterval(stateCheck);
+                                }
+                            }
+                        }, 2000);
+                    } catch (error) {
+                        addLogEntry(`Failed to create EventSource: ${error.message}`, 'error');
+                    }
+                    }, 1000); // Close the setTimeout
+                })
+                .catch(error => {
+                    addLogEntry(`REST simulator check failed: ${error.message}`, 'error');
                     document.getElementById('restStatus').className = 'connection-status disconnected';
-                };
-                
-                addLogEntry('Attempting to start data streaming...', 'info');
-            } catch (error) {
-                addLogEntry(`Failed to start streaming: ${error.message}`, 'error');
-            }
+                });
         }
         
         // Stop data streaming
         function stopStreaming() {
+            console.log('Stop streaming button clicked');
+            addLogEntry('Stop streaming button clicked', 'info');
+            
             if (eventSource) {
                 eventSource.close();
                 eventSource = null;
-                addLogEntry('Data streaming stopped', 'warning');
             }
+            
+            // Stop streaming on the server
+            fetch('http://localhost:8000/api/stream/stop', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    addLogEntry(`Streaming stopped: ${data.message}`, 'warning');
+                    document.getElementById('restStatus').className = 'connection-status disconnected';
+                })
+                .catch(error => {
+                    addLogEntry(`Error stopping stream: ${error.message}`, 'error');
+                });
         }
         
         // Update dashboard with new data
@@ -522,18 +692,29 @@
             }
         }
         
-        // Test MCP query
-        async function testMCPQuery() {
-            const queries = [
-                "What's the current temperature?",
-                "Is the energy usage optimal?",
-                "Should I adjust the HVAC settings?",
-                "What's the humidity trend?",
-                "Are there any anomalies in the data?"
-            ];
+        // Execute selected AI query
+        async function executeSelectedQuery() {
+            const dropdown = document.getElementById('aiQueryDropdown');
+            const selectedValue = dropdown.value;
             
-            const query = queries[Math.floor(Math.random() * queries.length)];
-            addLogEntry(`Testing MCP query: "${query}"`, 'info');
+            if (!selectedValue) {
+                addLogEntry('Please select a query from the dropdown', 'warning');
+                return;
+            }
+            
+            const queryMap = {
+                'temperature': "What's the current temperature?",
+                'energy': "Is the energy usage optimal?",
+                'hvac': "Should I adjust the HVAC settings?",
+                'humidity': "What's the humidity trend?",
+                'anomalies': "Are there any anomalies in the data?",
+                'bacnet': "Test BACnet connection and get device information",
+                'protocols': "Compare REST vs BACnet data",
+                'optimization': "Suggest energy optimization strategies"
+            };
+            
+            const query = queryMap[selectedValue];
+            addLogEntry(`Executing AI query: "${query}"`, 'info');
             
             try {
                 // Call the actual MCP API
@@ -547,28 +728,120 @@
                 
                 if (response.ok) {
                     const result = await response.json();
-                    addLogEntry(`MCP Response: ${result.response}`, 'success');
-                    addAIDecision("MCP Query Processing", result.response);
+                    addLogEntry(`AI Response: ${result.response}`, 'success');
+                    addAIDecision("AI Query Processing", result.response);
                 } else {
                     addLogEntry(`MCP API error: ${response.status}`, 'error');
                 }
             } catch (error) {
-                addLogEntry(`MCP query failed: ${error.message}`, 'error');
+                addLogEntry(`AI query failed: ${error.message}`, 'error');
                 
-                // Fallback to simulation
+                // Fallback to simulated response based on query type
                 setTimeout(() => {
-                    const responses = [
-                        "AI analyzed the query and determined optimal protocol: REST API",
-                        "Local AI engine processed query in 0.1ms",
-                        "Dynamic protocol implementation generated successfully",
-                        "Device communication established via intelligent protocol selection"
-                    ];
+                    const simulatedResponses = {
+                        'temperature': "Current temperature is 72.5°F. System is operating within optimal range.",
+                        'energy': "Energy usage is at 85% efficiency. Consider minor HVAC adjustments for optimization.",
+                        'hvac': "HVAC system is functioning well. Current settings are appropriate for the environment.",
+                        'humidity': "Humidity is at 45% and trending downward. This is within acceptable parameters.",
+                        'anomalies': "No anomalies detected. All sensor readings are within normal ranges.",
+                        'bacnet': "BACnet device connected successfully. Device ID: 1234, Status: Active",
+                        'protocols': "REST shows 72.5°F, BACnet shows 73.1°F. Both protocols functioning correctly.",
+                        'optimization': "Recommend: 1) Adjust setpoint to 72°F, 2) Check filter status, 3) Monitor humidity levels"
+                    };
                     
-                    const response = responses[Math.floor(Math.random() * responses.length)];
-                    addLogEntry(`Simulated MCP Response: ${response}`, 'success');
-                    addAIDecision("MCP Query Processing (Simulated)", response);
+                    const response = simulatedResponses[selectedValue] || "AI analyzed the query and determined optimal protocol: REST API";
+                    addLogEntry(`Simulated AI Response: ${response}`, 'success');
+                    addAIDecision("AI Query Processing (Simulated)", response);
                 }, 1000);
             }
+            
+            // Reset dropdown
+            dropdown.value = '';
+        }
+        
+        // Legacy function for backward compatibility
+        async function testMCPQuery() {
+            // Randomly select a query and execute it
+            const queries = ['temperature', 'energy', 'hvac', 'humidity', 'anomalies'];
+            const randomQuery = queries[Math.floor(Math.random() * queries.length)];
+            
+            // Set the dropdown value and execute
+            document.getElementById('aiQueryDropdown').value = randomQuery;
+            await executeSelectedQuery();
+        }
+        
+        // Test BACnet connection
+        async function testBACnetConnection() {
+            addLogEntry('Testing BACnet connection...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:8081/api/mcp/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        query: "Test BACnet connection and get device information" 
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    addLogEntry(`BACnet test: ${result.response}`, 'success');
+                    document.getElementById('bacnetStatus').className = 'connection-status connected';
+                } else {
+                    addLogEntry('BACnet connection test failed', 'error');
+                    document.getElementById('bacnetStatus').className = 'connection-status disconnected';
+                }
+            } catch (error) {
+                addLogEntry(`BACnet test error: ${error.message}`, 'error');
+                document.getElementById('bacnetStatus').className = 'connection-status disconnected';
+            }
+        }
+        
+        // Start BACnet polling
+        function startBACnetPolling() {
+            addLogEntry('Starting BACnet data polling...', 'info');
+            
+            // Simulate BACnet data polling every 10 seconds
+            const bacnetInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('http://localhost:8081/api/mcp/query', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            query: "Get BACnet temperature and humidity readings" 
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        
+                        // Simulate BACnet data (in real implementation, this would come from BACnet)
+                        const bacnetData = {
+                            temperature: (72 + Math.random() * 6).toFixed(1),
+                            humidity: (40 + Math.random() * 20).toFixed(1),
+                            deviceId: 'BACnet-1234',
+                            status: 'Active'
+                        };
+                        
+                        // Update BACnet display
+                        document.getElementById('bacnetTemperature').textContent = bacnetData.temperature;
+                        document.getElementById('bacnetHumidity').textContent = bacnetData.humidity;
+                        document.getElementById('bacnetDeviceId').textContent = bacnetData.deviceId;
+                        document.getElementById('bacnetStatus').textContent = bacnetData.status;
+                        
+                        addLogEntry(`BACnet data: ${bacnetData.temperature}°F, ${bacnetData.humidity}%`, 'info');
+                    }
+                } catch (error) {
+                    addLogEntry(`BACnet polling error: ${error.message}`, 'error');
+                }
+            }, 10000); // Poll every 10 seconds
+            
+            // Store interval ID for cleanup
+            window.bacnetInterval = bacnetInterval;
         }
         
         // Add log entry
@@ -589,10 +862,10 @@
             }
         }
         
-        // Auto-start streaming when page loads
-        setTimeout(() => {
-            startStreaming();
-        }, 2000);
+        // Auto-start streaming when page loads (disabled for manual control)
+        // setTimeout(() => {
+        //     startStreaming();
+        // }, 2000);
     </script>
 </body>
 </html>

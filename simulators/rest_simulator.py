@@ -223,11 +223,16 @@ async def get_room_temperature(room_id: str):
 
 
 @app.get("/api/stream")
+@app.head("/api/stream")
 async def stream_data():
     """Stream real-time data updates"""
     async def generate_data():
         global streaming_active, data_history
-        streaming_active = True
+        
+        # Only stream if streaming is active
+        if not streaming_active:
+            yield "data: {\"message\": \"Streaming not active\"}\n\n"
+            return
         
         while streaming_active:
             # Generate realistic sensor data with trends
@@ -273,7 +278,16 @@ async def stream_data():
             # Wait for next interval
             await asyncio.sleep(stream_interval)
     
-    return StreamingResponse(generate_data(), media_type="text/plain")
+    return StreamingResponse(
+        generate_data(), 
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control"
+        }
+    )
 
 
 @app.post("/api/stream/start")
