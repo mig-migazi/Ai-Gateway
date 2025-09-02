@@ -39,10 +39,35 @@ mcp_activity_log = []
 active_connections = {}
 ai_decisions = []
 
+# Hybrid architecture data
+edge_gateway_status = {
+    "tinyml_models": 3,
+    "model_size_kb": 2.44,
+    "inference_time_ms": 1,
+    "power_usage": "ultra-low",
+    "offline_capable": True,
+    "status": "online"
+}
+
+cloud_context_status = {
+    "api_cost": 0.00,
+    "device_contexts": 1247,
+    "response_time_ms": 200,
+    "uptime_percent": 99.9,
+    "status": "online"
+}
+
+anomaly_detections = []
+
 @app.get("/")
 async def serve_dashboard():
     """Serve the main dashboard"""
     return FileResponse(dashboard_path / "index.html")
+
+@app.get("/hybrid")
+async def serve_hybrid_dashboard():
+    """Serve the hybrid edge-cloud dashboard"""
+    return FileResponse(dashboard_path / "hybrid_dashboard.html")
 
 @app.get("/api/mcp/status")
 async def get_mcp_status():
@@ -178,6 +203,61 @@ async def get_analytics():
         }
     }
 
+@app.get("/api/hybrid/edge-status")
+async def get_edge_gateway_status():
+    """Get edge gateway status"""
+    return edge_gateway_status
+
+@app.get("/api/hybrid/cloud-status")
+async def get_cloud_context_status():
+    """Get cloud context service status"""
+    return cloud_context_status
+
+@app.get("/api/hybrid/anomalies")
+async def get_anomalies():
+    """Get current anomalies"""
+    return {
+        "anomalies": anomaly_detections,
+        "total_count": len(anomaly_detections),
+        "critical_count": len([a for a in anomaly_detections if a.get("severity") == "critical"]),
+        "high_count": len([a for a in anomaly_detections if a.get("severity") == "high"]),
+        "medium_count": len([a for a in anomaly_detections if a.get("severity") == "medium"]),
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/api/hybrid/simulate-anomaly")
+async def simulate_anomaly():
+    """Simulate a new anomaly"""
+    import random
+    
+    anomaly_types = ["sensor_drift", "maintenance_overdue", "value_out_of_range", "environmental_anomaly"]
+    severities = ["critical", "high", "medium"]
+    parameters = ["temperature", "humidity", "pressure", "setpoint"]
+    
+    anomaly = {
+        "id": f"anomaly_{len(anomaly_detections) + 1}",
+        "type": random.choice(anomaly_types),
+        "severity": random.choice(severities),
+        "parameter": random.choice(parameters),
+        "description": f"Simulated {random.choice(anomaly_types).replace('_', ' ')} detected",
+        "timestamp": datetime.now().isoformat(),
+        "confidence": round(random.uniform(0.7, 0.95), 2)
+    }
+    
+    anomaly_detections.append(anomaly)
+    
+    # Keep only last 50 anomalies
+    if len(anomaly_detections) > 50:
+        anomaly_detections.pop(0)
+    
+    return anomaly
+
+@app.delete("/api/hybrid/anomalies")
+async def clear_anomalies():
+    """Clear all anomalies"""
+    anomaly_detections.clear()
+    return {"message": "All anomalies cleared", "timestamp": datetime.now().isoformat()}
+
 if __name__ == "__main__":
     print("🚀 Starting AI Gateway Dashboard Server...")
     print("📊 Dashboard will be available at: http://localhost:8081")
@@ -185,6 +265,7 @@ if __name__ == "__main__":
     print()
     print("Available endpoints:")
     print("  GET  /                    - Main dashboard")
+    print("  GET  /hybrid              - Hybrid edge-cloud dashboard")
     print("  GET  /api/mcp/status      - MCP server status")
     print("  GET  /api/mcp/connections - Active connections")
     print("  GET  /api/mcp/decisions   - AI decisions")
@@ -192,6 +273,11 @@ if __name__ == "__main__":
     print("  POST /api/mcp/simulate    - Simulate MCP activity")
     print("  POST /api/mcp/query       - Simulate query processing")
     print("  GET  /api/analytics       - Analytics data")
+    print("  GET  /api/hybrid/edge-status    - Edge gateway status")
+    print("  GET  /api/hybrid/cloud-status   - Cloud context status")
+    print("  GET  /api/hybrid/anomalies      - Current anomalies")
+    print("  POST /api/hybrid/simulate-anomaly - Simulate anomaly")
+    print("  DELETE /api/hybrid/anomalies    - Clear anomalies")
     print()
     
     uvicorn.run(app, host="0.0.0.0", port=8081)

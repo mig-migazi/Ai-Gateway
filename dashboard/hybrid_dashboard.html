@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Edge-Cloud AI Gateway Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            font-weight: 300;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .architecture-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .card-icon {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+
+        .card-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #3498db;
+        }
+
+        .status-item.edge {
+            border-left-color: #e74c3c;
+        }
+
+        .status-item.cloud {
+            border-left-color: #9b59b6;
+        }
+
+        .status-item.anomaly {
+            border-left-color: #f39c12;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 12px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.online {
+            background: #27ae60;
+        }
+
+        .status-indicator.offline {
+            background: #e74c3c;
+        }
+
+        .status-indicator.warning {
+            background: #f39c12;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-weight: 500;
+            color: #7f8c8d;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .anomaly-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .anomaly-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .anomaly-item.critical {
+            border-left-color: #e74c3c;
+            background: #fdf2f2;
+        }
+
+        .anomaly-item.high {
+            border-left-color: #f39c12;
+            background: #fef9e7;
+        }
+
+        .anomaly-item.medium {
+            border-left-color: #3498db;
+            background: #ebf3fd;
+        }
+
+        .anomaly-severity {
+            font-size: 0.8em;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            margin-right: 10px;
+            color: white;
+        }
+
+        .anomaly-severity.critical {
+            background: #e74c3c;
+        }
+
+        .anomaly-severity.high {
+            background: #f39c12;
+        }
+
+        .anomaly-severity.medium {
+            background: #3498db;
+        }
+
+        .anomaly-description {
+            flex: 1;
+            font-size: 0.9em;
+        }
+
+        .anomaly-time {
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+
+        .flow-diagram {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .flow-step {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .flow-step::after {
+            content: '→';
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5em;
+            color: #3498db;
+        }
+
+        .flow-step:last-child::after {
+            display: none;
+        }
+
+        .flow-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .flow-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .flow-description {
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+        }
+
+        .log-container {
+            background: #2c3e50;
+            color: #ecf0f1;
+            border-radius: 15px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #34495e;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-timestamp {
+            color: #95a5a6;
+            margin-right: 10px;
+        }
+
+        .log-level {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .log-level.info {
+            color: #3498db;
+        }
+
+        .log-level.success {
+            color: #27ae60;
+        }
+
+        .log-level.warning {
+            color: #f39c12;
+        }
+
+        .log-level.error {
+            color: #e74c3c;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .demo-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .demo-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .demo-btn {
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+
+        .demo-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .flow-diagram {
+                grid-template-columns: 1fr;
+            }
+            
+            .flow-step::after {
+                content: '↓';
+                right: 50%;
+                top: auto;
+                bottom: -15px;
+                transform: translateX(50%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🚀 Hybrid Edge-Cloud AI Gateway</h1>
+            <p>Ultra-lightweight edge processing with rich cloud context</p>
+            <div class="architecture-badge">TinyML + Vector DB + Free LLM</div>
+        </div>
+
+        <!-- Architecture Flow -->
+        <div class="demo-section">
+            <div class="card-header">
+                <div class="card-icon">🔄</div>
+                <div class="card-title">Hybrid Edge-Cloud Flow</div>
+            </div>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-icon">📱</div>
+                    <div class="flow-title">Device Connects</div>
+                    <div class="flow-description">BACnet/REST device starts communication</div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-icon">🧠</div>
+                    <div class="flow-title">Edge AI (1ms)</div>
+                    <div class="flow-description">TinyML identifies protocol & creates fingerprint</div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-icon">☁️</div>
+                    <div class="flow-title">Cloud Context</div>
+                    <div class="flow-description">Free LLM + Vector DB provides device context</div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-icon">🎯</div>
+                    <div class="flow-title">Intelligent Handling</div>
+                    <div class="flow-description">Gateway handles device with full context</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="main-grid">
+            <!-- Edge Gateway Status -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🔗</div>
+                    <div class="card-title">Edge Gateway</div>
+                </div>
+                
+                <div class="status-grid">
+                    <div class="status-item edge">
+                        <div class="status-indicator online"></div>
+                        <div>
+                            <div style="font-weight: 600;">TinyML Engine</div>
+                            <div style="font-size: 0.8em; color: #7f8c8d;">2.44 KB Models</div>
+                        </div>
+                    </div>
+                    <div class="status-item edge">
+                        <div class="status-indicator online"></div>
+                        <div>
+                            <div style="font-weight: 600;">Protocol ID</div>
+                            <div style="font-size: 0.8em; color: #7f8c8d;">~1ms inference</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metric">
+                    <span class="metric-label">Model Size</span>
+                    <span class="metric-value">2.44 KB</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Inference Time</span>
+                    <span class="metric-value">~1ms</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Power Usage</span>
+                    <span class="metric-value">Ultra-low</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Offline Capable</span>
+                    <span class="metric-value">✅ Yes</span>
+                </div>
+            </div>
+
+            <!-- Cloud Context Service -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">☁️</div>
+                    <div class="card-title">Cloud Context Service</div>
+                </div>
+                
+                <div class="status-grid">
+                    <div class="status-item cloud">
+                        <div class="status-indicator online"></div>
+                        <div>
+                            <div style="font-weight: 600;">Free LLM</div>
+                            <div style="font-size: 0.8em; color: #7f8c8d;">Hugging Face</div>
+                        </div>
+                    </div>
+                    <div class="status-item cloud">
+                        <div class="status-indicator online"></div>
+                        <div>
+                            <div style="font-weight: 600;">Vector DB</div>
+                            <div style="font-size: 0.8em; color: #7f8c8d;">Device docs</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metric">
+                    <span class="metric-label">API Cost</span>
+                    <span class="metric-value">$0.00</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Device Contexts</span>
+                    <span class="metric-value">1,247</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Response Time</span>
+                    <span class="metric-value">~200ms</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Uptime</span>
+                    <span class="metric-value">99.9%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anomaly Detection -->
+        <div class="card full-width">
+            <div class="card-header">
+                <div class="card-icon">🚨</div>
+                <div class="card-title">Documentation-Driven Anomaly Detection</div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" onclick="startAnomalyDetection()">Start Detection</button>
+                <button class="btn btn-warning" onclick="simulateAnomalies()">Simulate Anomalies</button>
+                <button class="btn btn-success" onclick="clearAnomalies()">Clear All</button>
+            </div>
+
+            <div class="anomaly-list" id="anomalyList">
+                <div class="anomaly-item critical">
+                    <div class="anomaly-severity critical">CRITICAL</div>
+                    <div class="anomaly-description">
+                        <strong>Temperature sensor failure</strong><br>
+                        <small>Room Temperature reading 5.0°C is outside critical range</small>
+                    </div>
+                    <div class="anomaly-time">2 min ago</div>
+                </div>
+                <div class="anomaly-item high">
+                    <div class="anomaly-severity high">HIGH</div>
+                    <div class="anomaly-description">
+                        <strong>Sensor calibration overdue</strong><br>
+                        <small>Sensor Calibration overdue by 120 days</small>
+                    </div>
+                    <div class="anomaly-time">5 min ago</div>
+                </div>
+                <div class="anomaly-item medium">
+                    <div class="anomaly-severity medium">MEDIUM</div>
+                    <div class="anomaly-description">
+                        <strong>Environmental anomaly</strong><br>
+                        <small>High temperature and humidity combination detected</small>
+                    </div>
+                    <div class="anomaly-time">8 min ago</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Data Charts -->
+        <div class="main-grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📊</div>
+                    <div class="card-title">Real-time Sensor Data</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="sensorChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🎯</div>
+                    <div class="card-title">AI Query Interface</div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <select id="queryType" style="width: 100%; padding: 12px; border: 2px solid #ecf0f1; border-radius: 10px; font-size: 1em;">
+                        <option value="temperature">What's the temperature in room 101?</option>
+                        <option value="humidity">Check humidity levels in the building</option>
+                        <option value="anomaly">Are there any anomalies detected?</option>
+                        <option value="maintenance">What maintenance is due?</option>
+                        <option value="device">Identify the BACnet device on port 47808</option>
+                        <option value="troubleshoot">Troubleshoot the HVAC system</option>
+                        <option value="optimize">Optimize energy consumption</option>
+                        <option value="status">Show system status</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-primary" onclick="executeQuery()" style="width: 100%;">Execute AI Query</button>
+                
+                <div id="queryResult" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; min-height: 100px; display: none;">
+                    <div style="font-weight: 600; margin-bottom: 10px;">AI Response:</div>
+                    <div id="queryResponse"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Section -->
+        <div class="demo-section">
+            <div class="card-header">
+                <div class="card-icon">🎮</div>
+                <div class="card-title">Hybrid Architecture Demos</div>
+            </div>
+            <p style="color: #7f8c8d; margin-bottom: 20px;">Test the new hybrid edge-cloud capabilities:</p>
+            
+            <div class="demo-buttons">
+                <a href="#" class="demo-btn" onclick="runDemo('tinyml')">
+                    🧠 TinyML Demo<br>
+                    <small>Test ultra-lightweight edge AI</small>
+                </a>
+                <a href="#" class="demo-btn" onclick="runDemo('documentation')">
+                    📚 Documentation-Driven<br>
+                    <small>AI-powered device simulation</small>
+                </a>
+                <a href="#" class="demo-btn" onclick="runDemo('hybrid')">
+                    🔄 Hybrid Edge-Cloud<br>
+                    <small>Complete architecture flow</small>
+                </a>
+                <a href="#" class="demo-btn" onclick="runDemo('anomaly')">
+                    🚨 Anomaly Detection<br>
+                    <small>Comprehensive anomaly analysis</small>
+                </a>
+            </div>
+        </div>
+
+        <!-- System Logs -->
+        <div class="card full-width">
+            <div class="card-header">
+                <div class="card-icon">📝</div>
+                <div class="card-title">System Activity Log</div>
+            </div>
+            <div class="log-container" id="systemLog">
+                <div class="log-entry">
+                    <span class="log-timestamp">[14:32:15]</span>
+                    <span class="log-level info">[INFO]</span>
+                    <span>Edge gateway initialized with 2.44 KB TinyML models</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">[14:32:16]</span>
+                    <span class="log-level success">[SUCCESS]</span>
+                    <span>Cloud context service connected to free LLM</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">[14:32:17]</span>
+                    <span class="log-level info">[INFO]</span>
+                    <span>BACnet device detected on port 47808</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">[14:32:18]</span>
+                    <span class="log-level info">[INFO]</span>
+                    <span>Device fingerprint created: hvac_controller_001</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">[14:32:19]</span>
+                    <span class="log-level success">[SUCCESS]</span>
+                    <span>Cloud context retrieved: Honeywell T6 Pro Smart Thermostat</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">[14:32:20]</span>
+                    <span class="log-level warning">[WARNING]</span>
+                    <span>Anomaly detected: Temperature sensor drift (29.5%)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize charts
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        const sensorChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: [],
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Humidity (%)',
+                    data: [],
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Pressure (hPa)',
+                    data: [],
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+
+        // Simulate real-time data
+        function updateChart() {
+            const now = new Date();
+            const timeLabel = now.toLocaleTimeString();
+            
+            // Add new data point
+            sensorChart.data.labels.push(timeLabel);
+            sensorChart.data.datasets[0].data.push(22 + Math.random() * 4 - 2);
+            sensorChart.data.datasets[1].data.push(45 + Math.random() * 10 - 5);
+            sensorChart.data.datasets[2].data.push(1013 + Math.random() * 4 - 2);
+            
+            // Keep only last 20 data points
+            if (sensorChart.data.labels.length > 20) {
+                sensorChart.data.labels.shift();
+                sensorChart.data.datasets.forEach(dataset => dataset.data.shift());
+            }
+            
+            sensorChart.update('none');
+        }
+
+        // Update chart every 2 seconds
+        setInterval(updateChart, 2000);
+
+        // Anomaly detection functions
+        function startAnomalyDetection() {
+            addLogEntry('info', 'Starting documentation-driven anomaly detection...');
+            addLogEntry('success', 'TinyML anomaly detector initialized');
+            addLogEntry('info', 'Monitoring 8 anomaly types: range, trend, pattern, maintenance, environmental, drift, failure, communication');
+        }
+
+        function simulateAnomalies() {
+            const anomalies = [
+                {
+                    severity: 'critical',
+                    description: 'Sensor failure detected',
+                    details: 'Temperature sensor reading 5.0°C is outside critical range',
+                    time: '1 min ago'
+                },
+                {
+                    severity: 'high',
+                    description: 'Maintenance overdue',
+                    details: 'Filter replacement overdue by 45 days',
+                    time: '3 min ago'
+                },
+                {
+                    severity: 'medium',
+                    description: 'Environmental anomaly',
+                    details: 'High temperature and humidity combination detected',
+                    time: '5 min ago'
+                }
+            ];
+
+            anomalies.forEach(anomaly => {
+                addAnomaly(anomaly);
+            });
+
+            addLogEntry('warning', 'Simulated anomalies added to detection system');
+        }
+
+        function clearAnomalies() {
+            document.getElementById('anomalyList').innerHTML = '';
+            addLogEntry('info', 'All anomalies cleared');
+        }
+
+        function addAnomaly(anomaly) {
+            const anomalyList = document.getElementById('anomalyList');
+            const anomalyItem = document.createElement('div');
+            anomalyItem.className = `anomaly-item ${anomaly.severity}`;
+            anomalyItem.innerHTML = `
+                <div class="anomaly-severity ${anomaly.severity}">${anomaly.severity.toUpperCase()}</div>
+                <div class="anomaly-description">
+                    <strong>${anomaly.description}</strong><br>
+                    <small>${anomaly.details}</small>
+                </div>
+                <div class="anomaly-time">${anomaly.time}</div>
+            `;
+            anomalyList.insertBefore(anomalyItem, anomalyList.firstChild);
+        }
+
+        // AI Query functions
+        function executeQuery() {
+            const queryType = document.getElementById('queryType').value;
+            const resultDiv = document.getElementById('queryResult');
+            const responseDiv = document.getElementById('queryResponse');
+            
+            resultDiv.style.display = 'block';
+            
+            const responses = {
+                temperature: "Room 101 temperature: 22.3°C (normal range). No anomalies detected.",
+                humidity: "Building humidity levels: 45% average. All zones within normal range (30-60%).",
+                anomaly: "3 anomalies detected: 1 critical (sensor failure), 1 high (maintenance overdue), 1 medium (environmental).",
+                maintenance: "Maintenance due: Filter replacement (45 days overdue), Sensor calibration (30 days overdue).",
+                device: "BACnet device identified: Honeywell T6 Pro Smart Thermostat. Model: T6PRO. Firmware: 1.2.3.",
+                troubleshoot: "HVAC troubleshooting: Check temperature sensor calibration, verify HVAC system operation, check for air flow obstructions.",
+                optimize: "Energy optimization: Reduce setpoint by 1°C, schedule maintenance, optimize fan speed. Potential savings: 15%.",
+                status: "System status: All components online. Edge gateway: 2.44 KB models loaded. Cloud service: Connected. 3 active devices."
+            };
+            
+            responseDiv.innerHTML = responses[queryType] || "Query executed successfully.";
+            addLogEntry('info', `AI query executed: ${queryType}`);
+        }
+
+        // Demo functions
+        function runDemo(demoType) {
+            const demos = {
+                tinyml: 'python demo_tinyml.py',
+                documentation: 'python demo_documentation_driven.py',
+                hybrid: 'python demo_hybrid_architecture.py',
+                anomaly: 'python demo_anomaly_detection.py'
+            };
+            
+            addLogEntry('info', `Starting ${demoType} demo: ${demos[demoType]}`);
+            addLogEntry('success', 'Demo completed successfully');
+        }
+
+        // Logging functions
+        function addLogEntry(level, message) {
+            const logContainer = document.getElementById('systemLog');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span class="log-level ${level}">[${level.toUpperCase()}]</span>
+                <span>${message}</span>
+            `;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Keep only last 50 log entries
+            while (logContainer.children.length > 50) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            addLogEntry('info', 'Hybrid Edge-Cloud AI Gateway Dashboard loaded');
+            addLogEntry('success', 'All systems initialized successfully');
+        });
+    </script>
+</body>
+</html>
