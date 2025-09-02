@@ -13,6 +13,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import sys
+import os
+
+# Add src to path for imports
+sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+
+from integration.mcp_dashboard_integration import integration
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -268,6 +275,110 @@ async def clear_anomalies():
     anomaly_detections.clear()
     return {"message": "All anomalies cleared", "timestamp": datetime.now().isoformat()}
 
+# Real MCP Integration Endpoints
+@app.get("/api/devices")
+async def get_devices():
+    """Get all devices from MCP integration"""
+    return {
+        "devices": integration.get_devices(),
+        "total": len(integration.get_devices())
+    }
+
+@app.post("/api/devices")
+async def add_device(request: dict):
+    """Add a new device via MCP integration"""
+    try:
+        protocol = request.get("protocol", "rest")
+        name = request.get("name", f"{protocol.upper()} Device")
+        ip = request.get("ip", "192.168.1.100")
+        port = request.get("port", 8080)
+        docs = request.get("docs", None)
+        
+        device = await integration.add_device(protocol, name, ip, port, docs)
+        return {"success": True, "device": device}
+    except Exception as e:
+        logger.error(f"Error adding device: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/devices/{device_id}")
+async def get_device(device_id: str):
+    """Get a specific device"""
+    device = integration.get_device(device_id)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    return device
+
+@app.delete("/api/devices/{device_id}")
+async def remove_device(device_id: str):
+    """Remove a device"""
+    success = integration.remove_device(device_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Device not found")
+    return {"success": True, "message": "Device removed"}
+
+@app.post("/api/devices/{device_id}/read")
+async def read_device(device_id: str):
+    """Read data from a device"""
+    result = await integration.read_device(device_id)
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
+
+@app.post("/api/devices/{device_id}/write")
+async def write_device(device_id: str, request: dict):
+    """Write data to a device"""
+    data = request.get("data", {})
+    result = await integration.write_device(device_id, data)
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
+
+@app.post("/api/devices/{device_id}/troubleshoot")
+async def troubleshoot_device(device_id: str):
+    """Troubleshoot a device using MCP server"""
+    result = await integration.troubleshoot_device(device_id)
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
+
+@app.post("/api/ai/query")
+async def process_ai_query(request: dict):
+    """Process an AI query using MCP server"""
+    query = request.get("query", "")
+    if not query:
+        raise HTTPException(status_code=400, detail="Query is required")
+    
+    result = await integration.process_ai_query(query)
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
+
+@app.get("/api/mcp/real-status")
+async def get_real_mcp_status():
+    """Get real MCP server status"""
+    return integration.get_mcp_status()
+
+@app.get("/api/mcp/real-activity")
+async def get_real_mcp_activity(limit: int = 50):
+    """Get real MCP activity log"""
+    return {
+        "log": integration.get_activity_log(limit),
+        "total": len(integration.get_activity_log())
+    }
+
+@app.get("/api/mcp/real-decisions")
+async def get_real_ai_decisions(limit: int = 10):
+    """Get real AI decisions"""
+    return {
+        "decisions": integration.get_ai_decisions(limit),
+        "total": len(integration.get_ai_decisions())
+    }
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize the MCP integration on startup"""
+    await integration.initialize()
+
 if __name__ == "__main__":
     print("🚀 Starting AI Gateway Dashboard Server...")
     print("📊 Dashboard will be available at: http://localhost:8081")
@@ -290,6 +401,19 @@ if __name__ == "__main__":
     print("  GET  /api/hybrid/anomalies      - Current anomalies")
     print("  POST /api/hybrid/simulate-anomaly - Simulate anomaly")
     print("  DELETE /api/hybrid/anomalies    - Clear anomalies")
+    print()
+    print("Real MCP Integration endpoints:")
+    print("  GET  /api/devices         - Get all devices")
+    print("  POST /api/devices         - Add new device")
+    print("  GET  /api/devices/{id}    - Get specific device")
+    print("  DELETE /api/devices/{id}  - Remove device")
+    print("  POST /api/devices/{id}/read - Read device data")
+    print("  POST /api/devices/{id}/write - Write device data")
+    print("  POST /api/devices/{id}/troubleshoot - Troubleshoot device")
+    print("  POST /api/ai/query        - Process AI query")
+    print("  GET  /api/mcp/real-status - Real MCP status")
+    print("  GET  /api/mcp/real-activity - Real MCP activity")
+    print("  GET  /api/mcp/real-decisions - Real AI decisions")
     print()
     
     uvicorn.run(app, host="0.0.0.0", port=8081)

@@ -674,34 +674,48 @@
         });
 
         // Add device function
-        function addDevice() {
+        async function addDevice() {
             const protocol = document.getElementById('protocolSelect').value;
             const name = document.getElementById('deviceName').value || `${protocol.toUpperCase()} Device`;
             const ip = document.getElementById('deviceIP').value || '192.168.1.100';
             const port = document.getElementById('devicePort').value || getDefaultPort(protocol);
             const docs = document.getElementById('deviceDocs').files[0];
 
-            const device = {
-                id: `device_${++deviceCounter}`,
-                protocol: protocol,
-                name: name,
-                ip: ip,
-                port: port,
-                status: 'online',
-                lastSeen: new Date(),
-                metrics: generateDeviceMetrics(protocol),
-                docs: docs ? docs.name : 'No documentation uploaded'
-            };
+            try {
+                const response = await fetch('/api/devices', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        protocol: protocol,
+                        name: name,
+                        ip: ip,
+                        port: parseInt(port),
+                        docs: docs ? docs.name : null
+                    })
+                });
 
-            devices.push(device);
-            renderDevice(device);
-            addLogEntry('success', `${protocol.toUpperCase()} device added: ${name}`);
-            
-            // Clear form
-            document.getElementById('deviceName').value = '';
-            document.getElementById('deviceIP').value = '';
-            document.getElementById('devicePort').value = '';
-            document.getElementById('deviceDocs').value = '';
+                if (response.ok) {
+                    const result = await response.json();
+                    const device = result.device;
+                    
+                    devices.push(device);
+                    renderDevice(device);
+                    addLogEntry('success', `${protocol.toUpperCase()} device added: ${name}`);
+                    
+                    // Clear form
+                    document.getElementById('deviceName').value = '';
+                    document.getElementById('deviceIP').value = '';
+                    document.getElementById('devicePort').value = '';
+                    document.getElementById('deviceDocs').value = '';
+                } else {
+                    const error = await response.json();
+                    addLogEntry('error', `Failed to add device: ${error.detail}`);
+                }
+            } catch (error) {
+                addLogEntry('error', `Error adding device: ${error.message}`);
+            }
         }
 
         function getDefaultPort(protocol) {
@@ -791,45 +805,104 @@
             deviceGrid.appendChild(deviceCard);
         }
 
-        function readDevice(deviceId) {
+        async function readDevice(deviceId) {
             const device = devices.find(d => d.id === deviceId);
             if (device) {
                 addLogEntry('info', `Reading data from ${device.name} (${device.protocol.toUpperCase()})`);
-                // Simulate reading data
-                setTimeout(() => {
-                    addLogEntry('success', `Data read from ${device.name}: 22.5°C, 45% humidity`);
-                }, 1000);
+                
+                try {
+                    const response = await fetch(`/api/devices/${deviceId}/read`, {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        addLogEntry('success', `Data read from ${device.name}: ${JSON.stringify(result.data)}`);
+                    } else {
+                        const error = await response.json();
+                        addLogEntry('error', `Failed to read from ${device.name}: ${error.detail}`);
+                    }
+                } catch (error) {
+                    addLogEntry('error', `Error reading from ${device.name}: ${error.message}`);
+                }
             }
         }
 
-        function writeDevice(deviceId) {
+        async function writeDevice(deviceId) {
             const device = devices.find(d => d.id === deviceId);
             if (device) {
                 addLogEntry('info', `Writing data to ${device.name} (${device.protocol.toUpperCase()})`);
-                // Simulate writing data
-                setTimeout(() => {
-                    addLogEntry('success', `Data written to ${device.name}: Setpoint updated to 25°C`);
-                }, 1000);
+                
+                try {
+                    const response = await fetch(`/api/devices/${deviceId}/write`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            data: {
+                                setpoint: 25.0,
+                                mode: 'auto',
+                                timestamp: new Date().toISOString()
+                            }
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        addLogEntry('success', `Data written to ${device.name}: ${result.message}`);
+                    } else {
+                        const error = await response.json();
+                        addLogEntry('error', `Failed to write to ${device.name}: ${error.detail}`);
+                    }
+                } catch (error) {
+                    addLogEntry('error', `Error writing to ${device.name}: ${error.message}`);
+                }
             }
         }
 
-        function troubleshootDevice(deviceId) {
+        async function troubleshootDevice(deviceId) {
             const device = devices.find(d => d.id === deviceId);
             if (device) {
                 addLogEntry('info', `Troubleshooting ${device.name} (${device.protocol.toUpperCase()})`);
-                // Simulate troubleshooting
-                setTimeout(() => {
-                    addLogEntry('success', `Troubleshooting complete for ${device.name}: No issues found`);
-                }, 2000);
+                
+                try {
+                    const response = await fetch(`/api/devices/${deviceId}/troubleshoot`, {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        addLogEntry('success', `Troubleshooting complete for ${device.name}: ${JSON.stringify(result.result)}`);
+                    } else {
+                        const error = await response.json();
+                        addLogEntry('error', `Troubleshooting failed for ${device.name}: ${error.detail}`);
+                    }
+                } catch (error) {
+                    addLogEntry('error', `Error troubleshooting ${device.name}: ${error.message}`);
+                }
             }
         }
 
-        function removeDevice(deviceId) {
+        async function removeDevice(deviceId) {
             const device = devices.find(d => d.id === deviceId);
             if (device) {
-                devices = devices.filter(d => d.id !== deviceId);
-                document.getElementById(deviceId).remove();
-                addLogEntry('warning', `Device removed: ${device.name} (${device.protocol.toUpperCase()})`);
+                try {
+                    const response = await fetch(`/api/devices/${deviceId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        devices = devices.filter(d => d.id !== deviceId);
+                        document.getElementById(deviceId).remove();
+                        addLogEntry('warning', `Device removed: ${device.name} (${device.protocol.toUpperCase()})`);
+                    } else {
+                        const error = await response.json();
+                        addLogEntry('error', `Failed to remove device: ${error.detail}`);
+                    }
+                } catch (error) {
+                    addLogEntry('error', `Error removing device: ${error.message}`);
+                }
             }
         }
 
@@ -882,26 +955,51 @@
         }
 
         // AI Query functions
-        function executeQuery() {
+        async function executeQuery() {
             const queryType = document.getElementById('queryType').value;
             const resultDiv = document.getElementById('queryResult');
             const responseDiv = document.getElementById('queryResponse');
             
             resultDiv.style.display = 'block';
+            responseDiv.innerHTML = 'Processing AI query...';
             
-            const responses = {
-                temperature: "Room 101 temperature: 22.3°C (normal range). No anomalies detected.",
-                humidity: "Building humidity levels: 45% average. All zones within normal range (30-60%).",
-                anomaly: "3 anomalies detected: 1 critical (sensor failure), 1 high (maintenance overdue), 1 medium (environmental).",
-                maintenance: "Maintenance due: Filter replacement (45 days overdue), Sensor calibration (30 days overdue).",
-                device: "Device on port 502 identified: Schneider Electric Modicon M580 PLC. Model: M580. Firmware: 2.80.",
-                troubleshoot: "HVAC troubleshooting: Check temperature sensor calibration, verify HVAC system operation, check for air flow obstructions.",
-                optimize: "Energy optimization: Reduce setpoint by 1°C, schedule maintenance, optimize fan speed. Potential savings: 15%.",
-                status: "System status: All components online. 4 devices connected. Edge gateway: 2.44 KB models loaded. Cloud service: Connected."
+            const queries = {
+                temperature: "What's the temperature in room 101?",
+                humidity: "Check humidity levels in the building",
+                anomaly: "Are there any anomalies detected?",
+                maintenance: "What maintenance is due?",
+                device: "Identify the device on port 502",
+                troubleshoot: "Troubleshoot the HVAC system",
+                optimize: "Optimize energy consumption",
+                status: "Show system status"
             };
             
-            responseDiv.innerHTML = responses[queryType] || "Query executed successfully.";
-            addLogEntry('info', `AI query executed: ${queryType}`);
+            const query = queries[queryType] || queryType;
+            
+            try {
+                const response = await fetch('/api/ai/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    responseDiv.innerHTML = result.result.response || result.result.reasoning || "AI query processed successfully.";
+                    addLogEntry('success', `AI query executed: ${query}`);
+                } else {
+                    const error = await response.json();
+                    responseDiv.innerHTML = `Error: ${error.detail}`;
+                    addLogEntry('error', `AI query failed: ${error.detail}`);
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `Error: ${error.message}`;
+                addLogEntry('error', `AI query error: ${error.message}`);
+            }
         }
 
         // Logging functions
@@ -926,25 +1024,63 @@
             }
         }
 
+        // Load existing devices from MCP integration
+        async function loadExistingDevices() {
+            try {
+                const response = await fetch('/api/devices');
+                if (response.ok) {
+                    const result = await response.json();
+                    devices = result.devices || [];
+                    
+                    // Render existing devices
+                    devices.forEach(device => {
+                        renderDevice(device);
+                    });
+                    
+                    addLogEntry('info', `Loaded ${devices.length} existing devices from MCP integration`);
+                } else {
+                    addLogEntry('warning', 'Failed to load existing devices from MCP integration');
+                }
+            } catch (error) {
+                addLogEntry('error', `Error loading existing devices: ${error.message}`);
+            }
+        }
+
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             addLogEntry('info', 'Multi-Protocol AI Gateway Dashboard loaded');
             addLogEntry('success', 'All systems initialized successfully');
             
-            // Add some sample devices
-            setTimeout(() => {
-                addDevice();
-                document.getElementById('protocolSelect').value = 'bacnet';
-                document.getElementById('deviceName').value = 'Temperature Sensor';
-                document.getElementById('deviceIP').value = '192.168.1.101';
-                document.getElementById('devicePort').value = '47808';
-                addDevice();
-                document.getElementById('protocolSelect').value = 'modbus';
-                document.getElementById('deviceName').value = 'PLC Controller';
-                document.getElementById('deviceIP').value = '192.168.1.102';
-                document.getElementById('devicePort').value = '502';
-                addDevice();
-            }, 1000);
+            // Load existing devices from MCP integration
+            loadExistingDevices();
+            
+            // Add some sample devices if none exist
+            setTimeout(async () => {
+                if (devices.length === 0) {
+                    addLogEntry('info', 'No existing devices found, adding sample devices...');
+                    
+                    // Add REST device
+                    document.getElementById('protocolSelect').value = 'rest';
+                    document.getElementById('deviceName').value = 'HVAC Controller';
+                    document.getElementById('deviceIP').value = '192.168.1.100';
+                    document.getElementById('devicePort').value = '8001';
+                    await addDevice();
+                    
+                    // Add BACnet device
+                    document.getElementById('protocolSelect').value = 'bacnet';
+                    document.getElementById('deviceName').value = 'Temperature Sensor';
+                    document.getElementById('deviceIP').value = '192.168.1.101';
+                    document.getElementById('devicePort').value = '47808';
+                    await addDevice();
+                    
+                    // Add Modbus device
+                    document.getElementById('protocolSelect').value = 'modbus';
+                    document.getElementById('deviceName').value = 'PLC Controller';
+                    document.getElementById('deviceIP').value = '192.168.1.102';
+                    document.getElementById('devicePort').value = '502';
+                    await addDevice();
+                }
+            }, 2000);
         });
     </script>
 </body>
