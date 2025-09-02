@@ -11,6 +11,9 @@ mcp>=1.0.0
 openai>=1.0.0
 numpy>=1.24.0
 
+# Cloud and HTTP
+aiohttp>=3.8.0
+
 # Utilities
 python-dotenv>=1.0.0
 pyyaml>=6.0.0
