@@ -61,13 +61,18 @@ anomaly_detections = []
 
 @app.get("/")
 async def serve_dashboard():
-    """Serve the main dashboard"""
-    return FileResponse(dashboard_path / "index.html")
+    """Serve the main dashboard - redirect to hybrid dashboard"""
+    return FileResponse(dashboard_path / "hybrid_dashboard.html")
 
 @app.get("/hybrid")
 async def serve_hybrid_dashboard():
     """Serve the hybrid edge-cloud dashboard"""
     return FileResponse(dashboard_path / "hybrid_dashboard.html")
+
+@app.get("/legacy")
+async def serve_legacy_dashboard():
+    """Serve the legacy dashboard"""
+    return FileResponse(dashboard_path / "index.html")
 
 @app.get("/api/mcp/status")
 async def get_mcp_status():
