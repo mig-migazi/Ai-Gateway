@@ -11,11 +11,11 @@ An AI-driven gateway that integrates with industrial protocols (BACnet IP, Modbu
 
 ## Architecture
 
-### System Overview
+### Hybrid Edge-Cloud System Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           AI GATEWAY ECOSYSTEM                                  │
+│                    HYBRID EDGE-CLOUD AI GATEWAY ECOSYSTEM                      │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -29,27 +29,42 @@ An AI-driven gateway that integrates with industrial protocols (BACnet IP, Modbu
           └──────────────────────┼──────────────────────┼──────────────────────┘
                                  │                      │
                     ┌─────────────▼─────────────┐      │
-                    │     AI GATEWAY CORE       │      │
+                    │     EDGE GATEWAY          │      │
+                    │   (Minimal Resources)     │      │
                     │                           │      │
                     │  ┌─────────────────────┐  │      │
-                    │  │   MCP SERVER        │  │      │
-                    │  │   (Dynamic Engine)  │  │      │
-                    │  └─────────┬───────────┘  │      │
-                    │            │              │      │
-                    │  ┌─────────▼───────────┐  │      │
-                    │  │  LOCAL AI ENGINE    │  │      │
-                    │  │  - NLP Processing   │  │      │
+                    │  │   TINYML ENGINE     │  │      │
+                    │  │   (2.44 KB Models)  │  │      │
+                    │  │  - Protocol ID      │  │      │
                     │  │  - Device Classify  │  │      │
                     │  │  - Anomaly Detect   │  │      │
+                    │  │  - Fast Inference   │  │      │
                     │  └─────────┬───────────┘  │      │
                     │            │              │      │
                     │  ┌─────────▼───────────┐  │      │
-                    │  │ PROTOCOL KNOWLEDGE  │  │      │
-                    │  │      BASE           │  │      │
-                    │  │ - BACnet Specs      │  │      │
-                    │  │ - REST Docs         │  │      │
-                    │  │ - Modbus Specs      │  │      │
-                    │  │ - OPC-UA Specs      │  │      │
+                    │  │ DEVICE FINGERPRINT  │  │      │
+                    │  │ - Network Features  │  │      │
+                    │  │ - Protocol Data     │  │      │
+                    │  │ - Communication     │  │      │
+                    │  └─────────┬───────────┘  │      │
+                    └─────────────┬─────────────┘      │
+                                  │                    │
+                    ┌─────────────▼─────────────┐      │
+                    │    CLOUD CONTEXT SERVICE  │      │
+                    │                           │      │
+                    │  ┌─────────────────────┐  │      │
+                    │  │   FREE LLM SERVICE  │  │      │
+                    │  │  - Device ID        │  │      │
+                    │  │  - Model Detection  │  │      │
+                    │  │  - Context Extract  │  │      │
+                    │  └─────────┬───────────┘  │      │
+                    │            │              │      │
+                    │  ┌─────────▼───────────┐  │      │
+                    │  │  VECTOR DATABASE    │  │      │
+                    │  │  - Device Docs      │  │      │
+                    │  │  - Embeddings       │  │      │
+                    │  │  - Similarity Search│  │      │
+                    │  │  - Troubleshooting  │  │      │
                     │  └─────────────────────┘  │      │
                     └─────────────┬─────────────┘      │
                                   │                    │
@@ -79,20 +94,29 @@ An AI-driven gateway that integrates with industrial protocols (BACnet IP, Modbu
                     └─────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              DATA FLOW                                          │
+│                        HYBRID EDGE-CLOUD DATA FLOW                             │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
-User Query → MCP Server → Local AI Engine → Protocol Knowledge Base → Dynamic Implementation
-     ↓              ↓              ↓                    ↓                      ↓
-Dashboard ← API Response ← Protocol Handler ← Device Communication ← Network Protocol
+Device → Edge Gateway (TinyML) → Cloud (LLM + Vector DB) → Context Response
+   ↓              ↓                      ↓                        ↓
+Network → Protocol ID → Device Fingerprint → Device Context → Intelligent Handling
+   ↓              ↓                      ↓                        ↓
+Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenance Schedule
 ```
 
 ### Component Details
 
-#### 🤖 **AI Gateway Core**
-- **MCP Server**: Central orchestrator that handles all protocol interactions
-- **Local AI Engine**: Fast, offline AI processing for NLP and device classification
-- **Protocol Knowledge Base**: Repository of protocol specifications and device documentation
+#### 🔗 **Edge Gateway (Minimal Resources)**
+- **TinyML Engine**: Ultra-lightweight ML models (2.44 KB total) for fast edge processing
+- **Device Fingerprinting**: Creates unique device signatures from network data
+- **Protocol Identification**: Fast protocol classification (~1ms inference time)
+- **Local Caching**: Stores device contexts for offline operation
+
+#### ☁️ **Cloud Context Service**
+- **Free LLM Service**: Uses Hugging Face models for device identification and context extraction
+- **Vector Database**: Stores device documentation with embeddings for similarity search
+- **Device Matching**: Finds similar devices using vector similarity algorithms
+- **Rich Context**: Returns parameters, error codes, troubleshooting guides, and maintenance schedules
 
 #### 🌐 **Protocol Simulators**
 - **REST API Simulator**: HTTP/JSON-based device simulation with real-time streaming
@@ -122,27 +146,34 @@ Dashboard ← API Response ← Protocol Handler ← Device Communication ← Net
 ## Current Implementation Status
 
 ### ✅ **Fully Implemented**
+- **Hybrid Edge-Cloud Architecture**: Complete edge gateway with cloud context service
+- **TinyML Engine**: Ultra-lightweight models (2.44 KB) for fast edge processing
+- **Cloud Context Service**: Free LLM integration with vector database
+- **Device Fingerprinting**: Network-based device identification and classification
+- **Vector Database**: Device documentation storage with similarity search
+- **Documentation-Driven Simulators**: AI-powered device simulation from specs
+- **Web Dashboard**: Real-time monitoring with status indicators and AI query interface
 - **REST API Simulator**: Complete with real-time streaming and EventSource support
 - **BACnet IP Simulator**: Basic UDP communication and device simulation
-- **MCP Server**: Dynamic protocol engine with local AI integration
-- **Web Dashboard**: Real-time monitoring with status indicators and AI query interface
-- **Local AI Engine**: NLP processing, device classification, and anomaly detection
-- **Protocol Knowledge Base**: BACnet and REST specifications with dynamic implementation
 
 ### 🚧 **In Development**
+- **Real PDF Parsing**: Extract device specs from actual PDF documentation
+- **Advanced Vector Search**: Improved similarity algorithms and embeddings
 - **Modbus TCP Simulator**: Industrial automation protocol support
 - **OPC-UA Simulator**: Machine-to-machine communication
-- **Advanced AI Features**: Predictive maintenance and energy optimization
 - **Device Discovery**: Automatic network scanning and device detection
 
 ### 🎯 **Key Features**
+- **Hybrid Architecture**: Edge AI + Cloud context for optimal performance
+- **Minimal Edge Resources**: 2.44 KB models, ~1ms inference time
+- **Rich Cloud Context**: Full device documentation and troubleshooting
+- **Vector Database Search**: Intelligent device matching from documentation
+- **Free LLM Integration**: No expensive API costs for device identification
+- **Offline Operation**: Cached contexts work without internet
 - **Real-time Data Streaming**: Live sensor data with 5-second intervals
-- **Dual Protocol Support**: Simultaneous REST and BACnet communication
 - **AI Query Interface**: 8 predefined query types with dropdown selection
 - **Status Monitoring**: Visual indicators for all system components
-- **Dynamic Protocol Implementation**: No hardcoded drivers, all protocols generated on-demand
-- **Local AI Processing**: Fast, offline AI with 0.1ms latency
-- **Professional Dashboard**: Modern UI with charts, logs, and controls
+- **No Hardcoded Rules**: All behavior learned from documentation
 
 ## Getting Started
 
@@ -151,6 +182,12 @@ Dashboard ← API Response ← Protocol Handler ← Device Communication ← Net
 2. **Install dependencies**: `pip install -r requirements.txt`
 3. **Set up environment**: Copy `env.example` to `.env` and add your OpenAI API key
 4. **Start all services**: `python demo_full_system.py`
+
+### Hybrid Architecture Demos
+- **TinyML Demo**: `python demo_tinyml.py` - Test ultra-lightweight edge AI models
+- **Documentation-Driven Simulator**: `python demo_documentation_driven.py` - AI-powered device simulation
+- **Hybrid Edge-Cloud**: `python demo_hybrid_architecture.py` - Complete hybrid architecture flow
+- **Cloud Context Service**: `python src/cloud/context_service.py` - Test cloud context retrieval
 
 ### Manual Setup
 1. **Start REST Simulator**: `python simulators/rest_simulator.py`
@@ -163,6 +200,29 @@ Dashboard ← API Response ← Protocol Handler ← Device Communication ← Net
 - **Demo Local AI**: `python demo_local_ai.py`
 - **Demo Dual Protocols**: `python demo_dual_protocols.py`
 - **Interactive Demo**: `python interactive_demo.py`
+
+## Hybrid Architecture Benefits
+
+### 🚀 **Edge Gateway Advantages**
+- **Ultra-Low Latency**: ~1ms protocol identification with TinyML models
+- **Minimal Resources**: 2.44 KB total model size (fits in L1 cache!)
+- **Offline Operation**: Cached device contexts work without internet
+- **Low Power**: Perfect for battery-powered industrial gateways
+- **Real-Time**: Sub-millisecond inference for time-critical applications
+
+### ☁️ **Cloud Context Advantages**
+- **Rich Device Knowledge**: Full documentation, error codes, troubleshooting
+- **Free LLM Integration**: No expensive API costs for device identification
+- **Vector Search**: Intelligent device matching from documentation
+- **Scalable**: Easy to add new devices via cloud updates
+- **Maintenance**: Centralized device knowledge management
+
+### 🔄 **Hybrid Flow**
+1. **Device connects** → Gateway uses TinyML to identify protocol (~1ms)
+2. **Gateway creates fingerprint** → Sends to cloud for context lookup
+3. **Cloud LLM identifies device** → Searches vector database for documentation
+4. **Cloud returns context** → Gateway caches and handles device intelligently
+5. **Future requests** → Use cached context for offline operation
 
 ## Technical Specifications
 
