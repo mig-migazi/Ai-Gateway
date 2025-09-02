@@ -74,6 +74,11 @@ async def serve_legacy_dashboard():
     """Serve the legacy dashboard"""
     return FileResponse(dashboard_path / "index.html")
 
+@app.get("/multi-protocol")
+async def serve_multi_protocol_dashboard():
+    """Serve the multi-protocol dashboard"""
+    return FileResponse(dashboard_path / "multi_protocol_dashboard.html")
+
 @app.get("/api/mcp/status")
 async def get_mcp_status():
     """Get MCP server status"""
@@ -271,6 +276,8 @@ if __name__ == "__main__":
     print("Available endpoints:")
     print("  GET  /                    - Main dashboard")
     print("  GET  /hybrid              - Hybrid edge-cloud dashboard")
+    print("  GET  /multi-protocol      - Multi-protocol device dashboard")
+    print("  GET  /legacy              - Legacy dashboard")
     print("  GET  /api/mcp/status      - MCP server status")
     print("  GET  /api/mcp/connections - Active connections")
     print("  GET  /api/mcp/decisions   - AI decisions")

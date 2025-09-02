@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Protocol AI Gateway Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            font-weight: 300;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .protocol-badges {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .protocol-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .protocol-badge.rest {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+
+        .protocol-badge.bacnet {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .protocol-badge.modbus {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .protocol-badge.opcua {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .card-icon {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+
+        .card-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .device-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 4px solid #3498db;
+        }
+
+        .device-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .device-card.rest {
+            border-left-color: #27ae60;
+        }
+
+        .device-card.bacnet {
+            border-left-color: #3498db;
+        }
+
+        .device-card.modbus {
+            border-left-color: #e74c3c;
+        }
+
+        .device-card.opcua {
+            border-left-color: #f39c12;
+        }
+
+        .device-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .device-icon {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+
+        .device-info h3 {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .device-info p {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.online {
+            background: #27ae60;
+        }
+
+        .status-indicator.offline {
+            background: #e74c3c;
+        }
+
+        .status-indicator.warning {
+            background: #f39c12;
+        }
+
+        .device-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .metric-value {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .device-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            font-size: 0.8em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .anomaly-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .anomaly-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .anomaly-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .anomaly-item.critical {
+            border-left-color: #e74c3c;
+            background: #fdf2f2;
+        }
+
+        .anomaly-item.high {
+            border-left-color: #f39c12;
+            background: #fef9e7;
+        }
+
+        .anomaly-item.medium {
+            border-left-color: #3498db;
+            background: #ebf3fd;
+        }
+
+        .anomaly-severity {
+            font-size: 0.8em;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            margin-right: 10px;
+            color: white;
+        }
+
+        .anomaly-severity.critical {
+            background: #e74c3c;
+        }
+
+        .anomaly-severity.high {
+            background: #f39c12;
+        }
+
+        .anomaly-severity.medium {
+            background: #3498db;
+        }
+
+        .anomaly-description {
+            flex: 1;
+            font-size: 0.9em;
+        }
+
+        .anomaly-time {
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .log-container {
+            background: #2c3e50;
+            color: #ecf0f1;
+            border-radius: 15px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #34495e;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-timestamp {
+            color: #95a5a6;
+            margin-right: 10px;
+        }
+
+        .log-level {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .log-level.info {
+            color: #3498db;
+        }
+
+        .log-level.success {
+            color: #27ae60;
+        }
+
+        .log-level.warning {
+            color: #f39c12;
+        }
+
+        .log-level.error {
+            color: #e74c3c;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .add-device-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .add-device-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .device-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .add-device-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🌐 Multi-Protocol AI Gateway</h1>
+            <p>Dynamic device discovery and management across all protocols</p>
+            <div class="protocol-badges">
+                <div class="protocol-badge rest">REST API</div>
+                <div class="protocol-badge bacnet">BACnet IP</div>
+                <div class="protocol-badge modbus">Modbus TCP</div>
+                <div class="protocol-badge opcua">OPC-UA</div>
+            </div>
+        </div>
+
+        <!-- Add Device Section -->
+        <div class="add-device-section">
+            <div class="card-header">
+                <div class="card-icon">➕</div>
+                <div class="card-title">Add New Device</div>
+            </div>
+            <p style="color: #7f8c8d; margin-bottom: 20px;">Add devices from any protocol - the system learns everything from documentation</p>
+            
+            <div class="add-device-form">
+                <div class="form-group">
+                    <label>Protocol</label>
+                    <select id="protocolSelect">
+                        <option value="rest">REST API</option>
+                        <option value="bacnet">BACnet IP</option>
+                        <option value="modbus">Modbus TCP</option>
+                        <option value="opcua">OPC-UA</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Device Name</label>
+                    <input type="text" id="deviceName" placeholder="e.g., HVAC Controller">
+                </div>
+                <div class="form-group">
+                    <label>IP Address</label>
+                    <input type="text" id="deviceIP" placeholder="e.g., 192.168.1.100">
+                </div>
+                <div class="form-group">
+                    <label>Port</label>
+                    <input type="number" id="devicePort" placeholder="e.g., 502">
+                </div>
+                <div class="form-group">
+                    <label>Documentation</label>
+                    <input type="file" id="deviceDocs" accept=".pdf,.json">
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="addDevice()" style="margin-top: 20px; padding: 12px 24px;">
+                Add Device
+            </button>
+        </div>
+
+        <!-- Device Grid -->
+        <div class="device-grid" id="deviceGrid">
+            <!-- Devices will be dynamically added here -->
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="main-grid">
+            <!-- Real-time Data Charts -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📊</div>
+                    <div class="card-title">Real-time Data</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="dataChart"></canvas>
+                </div>
+            </div>
+
+            <!-- AI Query Interface -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🎯</div>
+                    <div class="card-title">AI Query Interface</div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <select id="queryType" style="width: 100%; padding: 12px; border: 2px solid #ecf0f1; border-radius: 10px; font-size: 1em;">
+                        <option value="temperature">What's the temperature in room 101?</option>
+                        <option value="humidity">Check humidity levels in the building</option>
+                        <option value="anomaly">Are there any anomalies detected?</option>
+                        <option value="maintenance">What maintenance is due?</option>
+                        <option value="device">Identify the device on port 502</option>
+                        <option value="troubleshoot">Troubleshoot the HVAC system</option>
+                        <option value="optimize">Optimize energy consumption</option>
+                        <option value="status">Show system status</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-primary" onclick="executeQuery()" style="width: 100%;">Execute AI Query</button>
+                
+                <div id="queryResult" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; min-height: 100px; display: none;">
+                    <div style="font-weight: 600; margin-bottom: 10px;">AI Response:</div>
+                    <div id="queryResponse"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anomaly Detection -->
+        <div class="anomaly-panel">
+            <div class="card-header">
+                <div class="card-icon">🚨</div>
+                <div class="card-title">Multi-Protocol Anomaly Detection</div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" onclick="startAnomalyDetection()">Start Detection</button>
+                <button class="btn btn-warning" onclick="simulateAnomalies()">Simulate Anomalies</button>
+                <button class="btn btn-success" onclick="clearAnomalies()">Clear All</button>
+            </div>
+
+            <div class="anomaly-list" id="anomalyList">
+                <!-- Anomalies will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- System Logs -->
+        <div class="card full-width">
+            <div class="card-header">
+                <div class="card-icon">📝</div>
+                <div class="card-title">Multi-Protocol System Activity</div>
+            </div>
+            <div class="log-container" id="systemLog">
+                <div class="log-entry">
+                    <span class="log-timestamp">[14:32:15]</span>
+                    <span class="log-level info">[INFO]</span>
+                    <span>Multi-protocol AI Gateway initialized</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">[14:32:16]</span>
+                    <span class="log-level success">[SUCCESS]</span>
+                    <span>REST API device connected: HVAC Controller</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">[14:32:17]</span>
+                    <span class="log-level success">[SUCCESS]</span>
+                    <span>BACnet device connected: Temperature Sensor</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-timestamp">[14:32:18]</span>
+                    <span class="log-level success">[SUCCESS]</span>
+                    <span>Modbus TCP device connected: PLC Controller</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Device management
+        let devices = [];
+        let deviceCounter = 0;
+
+        // Initialize charts
+        const ctx = document.getElementById('dataChart').getContext('2d');
+        const dataChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+
+        // Add device function
+        function addDevice() {
+            const protocol = document.getElementById('protocolSelect').value;
+            const name = document.getElementById('deviceName').value || `${protocol.toUpperCase()} Device`;
+            const ip = document.getElementById('deviceIP').value || '192.168.1.100';
+            const port = document.getElementById('devicePort').value || getDefaultPort(protocol);
+            const docs = document.getElementById('deviceDocs').files[0];
+
+            const device = {
+                id: `device_${++deviceCounter}`,
+                protocol: protocol,
+                name: name,
+                ip: ip,
+                port: port,
+                status: 'online',
+                lastSeen: new Date(),
+                metrics: generateDeviceMetrics(protocol),
+                docs: docs ? docs.name : 'No documentation uploaded'
+            };
+
+            devices.push(device);
+            renderDevice(device);
+            addLogEntry('success', `${protocol.toUpperCase()} device added: ${name}`);
+            
+            // Clear form
+            document.getElementById('deviceName').value = '';
+            document.getElementById('deviceIP').value = '';
+            document.getElementById('devicePort').value = '';
+            document.getElementById('deviceDocs').value = '';
+        }
+
+        function getDefaultPort(protocol) {
+            const ports = {
+                'rest': 8000,
+                'bacnet': 47808,
+                'modbus': 502,
+                'opcua': 4840
+            };
+            return ports[protocol] || 8080;
+        }
+
+        function generateDeviceMetrics(protocol) {
+            const metrics = {
+                'rest': {
+                    'Response Time': '45ms',
+                    'Uptime': '99.9%',
+                    'Requests/min': '120',
+                    'Error Rate': '0.1%'
+                },
+                'bacnet': {
+                    'Response Time': '12ms',
+                    'Uptime': '99.8%',
+                    'Objects': '45',
+                    'Error Rate': '0.2%'
+                },
+                'modbus': {
+                    'Response Time': '8ms',
+                    'Uptime': '99.9%',
+                    'Registers': '128',
+                    'Error Rate': '0.1%'
+                },
+                'opcua': {
+                    'Response Time': '25ms',
+                    'Uptime': '99.7%',
+                    'Nodes': '256',
+                    'Error Rate': '0.3%'
+                }
+            };
+            return metrics[protocol] || {};
+        }
+
+        function renderDevice(device) {
+            const deviceGrid = document.getElementById('deviceGrid');
+            const deviceCard = document.createElement('div');
+            deviceCard.className = `device-card ${device.protocol}`;
+            deviceCard.id = device.id;
+
+            const protocolIcons = {
+                'rest': '🌐',
+                'bacnet': '🏢',
+                'modbus': '⚙️',
+                'opcua': '🔗'
+            };
+
+            deviceCard.innerHTML = `
+                <div class="device-header">
+                    <div class="device-icon">${protocolIcons[device.protocol]}</div>
+                    <div class="device-info">
+                        <h3>${device.name}</h3>
+                        <p>${device.protocol.toUpperCase()} • ${device.ip}:${device.port}</p>
+                    </div>
+                </div>
+                
+                <div class="device-status">
+                    <div class="status-indicator ${device.status}"></div>
+                    <span>${device.status.toUpperCase()}</span>
+                </div>
+                
+                <div class="device-metrics">
+                    ${Object.entries(device.metrics).map(([key, value]) => `
+                        <div class="metric">
+                            <span class="metric-label">${key}</span>
+                            <span class="metric-value">${value}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="device-controls">
+                    <button class="btn btn-primary" onclick="readDevice('${device.id}')">Read</button>
+                    <button class="btn btn-success" onclick="writeDevice('${device.id}')">Write</button>
+                    <button class="btn btn-warning" onclick="troubleshootDevice('${device.id}')">Troubleshoot</button>
+                    <button class="btn btn-danger" onclick="removeDevice('${device.id}')">Remove</button>
+                </div>
+            `;
+
+            deviceGrid.appendChild(deviceCard);
+        }
+
+        function readDevice(deviceId) {
+            const device = devices.find(d => d.id === deviceId);
+            if (device) {
+                addLogEntry('info', `Reading data from ${device.name} (${device.protocol.toUpperCase()})`);
+                // Simulate reading data
+                setTimeout(() => {
+                    addLogEntry('success', `Data read from ${device.name}: 22.5°C, 45% humidity`);
+                }, 1000);
+            }
+        }
+
+        function writeDevice(deviceId) {
+            const device = devices.find(d => d.id === deviceId);
+            if (device) {
+                addLogEntry('info', `Writing data to ${device.name} (${device.protocol.toUpperCase()})`);
+                // Simulate writing data
+                setTimeout(() => {
+                    addLogEntry('success', `Data written to ${device.name}: Setpoint updated to 25°C`);
+                }, 1000);
+            }
+        }
+
+        function troubleshootDevice(deviceId) {
+            const device = devices.find(d => d.id === deviceId);
+            if (device) {
+                addLogEntry('info', `Troubleshooting ${device.name} (${device.protocol.toUpperCase()})`);
+                // Simulate troubleshooting
+                setTimeout(() => {
+                    addLogEntry('success', `Troubleshooting complete for ${device.name}: No issues found`);
+                }, 2000);
+            }
+        }
+
+        function removeDevice(deviceId) {
+            const device = devices.find(d => d.id === deviceId);
+            if (device) {
+                devices = devices.filter(d => d.id !== deviceId);
+                document.getElementById(deviceId).remove();
+                addLogEntry('warning', `Device removed: ${device.name} (${device.protocol.toUpperCase()})`);
+            }
+        }
+
+        // Anomaly detection functions
+        function startAnomalyDetection() {
+            addLogEntry('info', 'Starting multi-protocol anomaly detection...');
+            addLogEntry('success', 'Anomaly detection active for all connected devices');
+        }
+
+        function simulateAnomalies() {
+            const protocols = ['rest', 'bacnet', 'modbus', 'opcua'];
+            const anomalyTypes = ['sensor_drift', 'communication_error', 'value_out_of_range', 'maintenance_overdue'];
+            const severities = ['critical', 'high', 'medium'];
+
+            for (let i = 0; i < 3; i++) {
+                const protocol = protocols[Math.floor(Math.random() * protocols.length)];
+                const type = anomalyTypes[Math.floor(Math.random() * anomalyTypes.length)];
+                const severity = severities[Math.floor(Math.random() * severities.length)];
+
+                addAnomaly({
+                    severity: severity,
+                    description: `${protocol.toUpperCase()} ${type.replace('_', ' ')}`,
+                    details: `Anomaly detected in ${protocol.toUpperCase()} device`,
+                    time: '1 min ago',
+                    protocol: protocol
+                });
+            }
+
+            addLogEntry('warning', 'Simulated anomalies added to detection system');
+        }
+
+        function clearAnomalies() {
+            document.getElementById('anomalyList').innerHTML = '';
+            addLogEntry('info', 'All anomalies cleared');
+        }
+
+        function addAnomaly(anomaly) {
+            const anomalyList = document.getElementById('anomalyList');
+            const anomalyItem = document.createElement('div');
+            anomalyItem.className = `anomaly-item ${anomaly.severity}`;
+            anomalyItem.innerHTML = `
+                <div class="anomaly-severity ${anomaly.severity}">${anomaly.severity.toUpperCase()}</div>
+                <div class="anomaly-description">
+                    <strong>${anomaly.description}</strong><br>
+                    <small>${anomaly.details}</small>
+                </div>
+                <div class="anomaly-time">${anomaly.time}</div>
+            `;
+            anomalyList.insertBefore(anomalyItem, anomalyList.firstChild);
+        }
+
+        // AI Query functions
+        function executeQuery() {
+            const queryType = document.getElementById('queryType').value;
+            const resultDiv = document.getElementById('queryResult');
+            const responseDiv = document.getElementById('queryResponse');
+            
+            resultDiv.style.display = 'block';
+            
+            const responses = {
+                temperature: "Room 101 temperature: 22.3°C (normal range). No anomalies detected.",
+                humidity: "Building humidity levels: 45% average. All zones within normal range (30-60%).",
+                anomaly: "3 anomalies detected: 1 critical (sensor failure), 1 high (maintenance overdue), 1 medium (environmental).",
+                maintenance: "Maintenance due: Filter replacement (45 days overdue), Sensor calibration (30 days overdue).",
+                device: "Device on port 502 identified: Schneider Electric Modicon M580 PLC. Model: M580. Firmware: 2.80.",
+                troubleshoot: "HVAC troubleshooting: Check temperature sensor calibration, verify HVAC system operation, check for air flow obstructions.",
+                optimize: "Energy optimization: Reduce setpoint by 1°C, schedule maintenance, optimize fan speed. Potential savings: 15%.",
+                status: "System status: All components online. 4 devices connected. Edge gateway: 2.44 KB models loaded. Cloud service: Connected."
+            };
+            
+            responseDiv.innerHTML = responses[queryType] || "Query executed successfully.";
+            addLogEntry('info', `AI query executed: ${queryType}`);
+        }
+
+        // Logging functions
+        function addLogEntry(level, message) {
+            const logContainer = document.getElementById('systemLog');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span class="log-level ${level}">[${level.toUpperCase()}]</span>
+                <span>${message}</span>
+            `;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Keep only last 50 log entries
+            while (logContainer.children.length > 50) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            addLogEntry('info', 'Multi-Protocol AI Gateway Dashboard loaded');
+            addLogEntry('success', 'All systems initialized successfully');
+            
+            // Add some sample devices
+            setTimeout(() => {
+                addDevice();
+                document.getElementById('protocolSelect').value = 'bacnet';
+                document.getElementById('deviceName').value = 'Temperature Sensor';
+                document.getElementById('deviceIP').value = '192.168.1.101';
+                document.getElementById('devicePort').value = '47808';
+                addDevice();
+                document.getElementById('protocolSelect').value = 'modbus';
+                document.getElementById('deviceName').value = 'PLC Controller';
+                document.getElementById('deviceIP').value = '192.168.1.102';
+                document.getElementById('devicePort').value = '502';
+                addDevice();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
