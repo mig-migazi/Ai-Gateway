@@ -21,7 +21,7 @@ An AI-driven gateway that integrates with industrial protocols (BACnet IP, Modbu
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   REST API      │    │   BACnet IP     │    │   Modbus TCP    │    │   OPC-UA        │
 │   Simulator     │    │   Simulator     │    │   Simulator     │    │   Simulator     │
-│   Port: 8000    │    │   Port: 47808   │    │   Port: 502     │    │   Port: 4840    │
+│   Port: 8001    │    │   Port: 47808   │    │   Port: 502     │    │   Port: 4840    │
 └─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
           │                      │                      │                      │
           │ HTTP/JSON            │ UDP/BACnet           │ TCP/Modbus           │ TCP/OPC-UA
@@ -121,14 +121,16 @@ Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenanc
 #### 🌐 **Protocol Simulators**
 - **REST API Simulator**: HTTP/JSON-based device simulation with real-time streaming
 - **BACnet IP Simulator**: UDP-based building automation protocol simulation
-- **Modbus TCP Simulator**: Industrial automation protocol simulation (planned)
+- **Modbus TCP Simulator**: Industrial automation protocol simulation with Schneider Electric Modicon M580 PLC
 - **OPC-UA Simulator**: Machine-to-machine communication simulation (planned)
 
 #### 📊 **Dashboard & Monitoring**
+- **Multi-Protocol Dashboard**: Dynamic device management across all protocols
 - **Real-time Dashboard**: Live data visualization and system monitoring
 - **AI Query Interface**: Dropdown-based query selection with 8 predefined options
 - **Status Monitoring**: Visual indicators for all system components
 - **Activity Logging**: Comprehensive system activity and decision tracking
+- **Real MCP Integration**: Connected to actual MCP server and device simulators
 
 #### 🔄 **Dynamic Protocol Implementation**
 - **On-demand Generation**: Protocol handlers created dynamically based on specifications
@@ -152,16 +154,19 @@ Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenanc
 - **Device Fingerprinting**: Network-based device identification and classification
 - **Vector Database**: Device documentation storage with similarity search
 - **Documentation-Driven Simulators**: AI-powered device simulation from specs
+- **Multi-Protocol Dashboard**: Dynamic device management across all protocols
+- **Real MCP Integration**: Connected to actual MCP server and device simulators
 - **Web Dashboard**: Real-time monitoring with status indicators and AI query interface
 - **REST API Simulator**: Complete with real-time streaming and EventSource support
 - **BACnet IP Simulator**: Basic UDP communication and device simulation
+- **Modbus TCP Simulator**: Industrial automation protocol with Schneider Electric Modicon M580 PLC
 
 ### 🚧 **In Development**
 - **Real PDF Parsing**: Extract device specs from actual PDF documentation
 - **Advanced Vector Search**: Improved similarity algorithms and embeddings
-- **Modbus TCP Simulator**: Industrial automation protocol support
 - **OPC-UA Simulator**: Machine-to-machine communication
 - **Device Discovery**: Automatic network scanning and device detection
+- **MCP Server HTTP Interface**: Currently stdio-based, needs HTTP wrapper
 
 ### 🎯 **Key Features**
 - **Hybrid Architecture**: Edge AI + Cloud context for optimal performance
@@ -192,8 +197,12 @@ Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenanc
 ### Manual Setup
 1. **Start REST Simulator**: `python simulators/rest_simulator.py`
 2. **Start BACnet Simulator**: `python simulators/bacnet_simulator.py`
-3. **Start Dashboard Server**: `python dashboard_server.py`
-4. **Access Dashboard**: Open http://localhost:8081 in your browser
+3. **Start Modbus Simulator**: `python simulators/modbus_simulator.py`
+4. **Start Dashboard Server**: `python dashboard_server.py`
+5. **Access Dashboards**: 
+   - Multi-Protocol Dashboard: http://localhost:8081/multi-protocol
+   - Hybrid Dashboard: http://localhost:8081/hybrid
+   - Legacy Dashboard: http://localhost:8081/legacy
 
 ### Testing
 - **Test API Key**: `python test_api_key.py`
@@ -227,15 +236,18 @@ Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenanc
 ## Technical Specifications
 
 ### Port Configuration
-- **REST Simulator**: `http://localhost:8000`
+- **REST Simulator**: `http://localhost:8001`
 - **BACnet Simulator**: `udp://localhost:47808`
+- **Modbus Simulator**: `tcp://localhost:502`
 - **Dashboard Server**: `http://localhost:8081`
-- **MCP Server**: Integrated with Dashboard Server
+- **MCP Server**: stdio-based (integrated with Dashboard Server)
 
 ### API Endpoints
 - **REST Simulator**: `/api/temperature`, `/api/humidity`, `/api/stream`
 - **Dashboard Server**: `/api/mcp/status`, `/api/mcp/query`, `/api/analytics`
+- **Multi-Protocol Dashboard**: `/api/devices`, `/api/ai/query`, `/api/mcp/real-status`
 - **BACnet Simulator**: UDP-based BACnet IP protocol
+- **Modbus Simulator**: TCP-based Modbus protocol
 
 ### AI Query Types
 1. **Temperature**: "What's the current temperature?"
