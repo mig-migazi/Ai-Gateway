@@ -2,6 +2,9 @@
 """
 Real Vector Embedding Service
 Uses sentence transformers for proper semantic embeddings
+
+Copyright (c) 2025 Miguel Migazi. All rights reserved.
+This software is proprietary and confidential. Unauthorized use is prohibited.
 """
 
 import os

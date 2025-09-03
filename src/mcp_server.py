@@ -2,6 +2,9 @@
 MCP Server for AI Gateway - Protocol-Agnostic Industrial Gateway
 This server provides the AI agent with tools to discover devices, implement protocols,
 and handle natural language queries about industrial systems.
+
+Copyright (c) 2025 Miguel Migazi. All rights reserved.
+This software is proprietary and confidential. Unauthorized use is prohibited.
 """
 
 import asyncio

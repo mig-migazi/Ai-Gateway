@@ -2,6 +2,9 @@
 """
 Real PDF Parser for Device Documentation
 Extracts text and structured data from manufacturer PDFs
+
+Copyright (c) 2025 Miguel Migazi. All rights reserved.
+This software is proprietary and confidential. Unauthorized use is prohibited.
 """
 
 import os

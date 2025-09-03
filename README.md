@@ -302,13 +302,51 @@ result = await mcp_server._implement_protocol_dynamically(
 
 ## Contributing
 
-This is a revolutionary approach to industrial protocol integration. Contributions are welcome for:
+This is a revolutionary approach to industrial protocol integration. **All contributions require explicit written consent** from the copyright holder.
+
+Potential contribution areas (subject to approval):
 - Additional protocol simulators (Modbus, OPC-UA, etc.)
 - Enhanced AI capabilities
 - Device discovery algorithms
 - Performance optimizations
 - Documentation improvements
 
+**Contact the copyright holder before making any contributions.**
+
 ## License
 
-This project demonstrates a novel approach to industrial protocol integration using AI-driven dynamic implementation.
+**Copyright (c) 2025 Miguel Migazi. All rights reserved.**
+
+This software and associated documentation files (the "Software") are proprietary and confidential. The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties.
+
+### Terms of Use
+
+**NO PERMISSION IS GRANTED** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, or to permit persons to whom the Software is furnished to do so, **WITHOUT EXPRESS WRITTEN CONSENT** from the copyright holder.
+
+### Restrictions
+
+- **Commercial Use**: Prohibited without explicit written permission
+- **Distribution**: Prohibited without explicit written permission  
+- **Modification**: Prohibited without explicit written permission
+- **Reverse Engineering**: Prohibited
+- **Derivative Works**: Prohibited without explicit written permission
+
+### Contact for Permission
+
+To request permission to use this Software, please contact:
+- **Email**: [Your Email Address]
+- **Subject**: "AI Gateway Software License Request"
+
+Include in your request:
+- Intended use case
+- Commercial or non-commercial purpose
+- Duration of use
+- Any modifications planned
+
+### Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+**⚠️ IMPORTANT**: This is proprietary software. Any unauthorized use, copying, or distribution is strictly prohibited and may result in legal action.
