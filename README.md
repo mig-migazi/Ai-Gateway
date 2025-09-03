@@ -200,6 +200,9 @@ Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenanc
 - **PDF Parser Test**: `python src/pdf/pdf_parser.py` - Test PDF parsing functionality
 - **Vector Embedding Test**: `python src/vector/embedding_service.py` - Test sentence transformer embeddings
 
+### Device Management Examples
+- **Add Device Examples**: `python example_add_device.py` - Complete examples of adding devices to the gateway
+
 ### Manual Setup
 1. **Start REST Simulator**: `python simulators/rest_simulator.py`
 2. **Start BACnet Simulator**: `python simulators/bacnet_simulator.py`
@@ -215,6 +218,216 @@ Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenanc
 - **Demo Local AI**: `python demo_local_ai.py`
 - **Demo Dual Protocols**: `python demo_dual_protocols.py`
 - **Interactive Demo**: `python interactive_demo.py`
+
+## Adding Device Support
+
+The AI Gateway is designed to support any industrial protocol through documentation-driven learning. Here's how to add support for new devices:
+
+### Method 1: Using the Web Dashboard (Recommended)
+
+1. **Access the Multi-Protocol Dashboard**:
+   ```
+   http://localhost:8081/multi-protocol
+   ```
+
+2. **Add Device Form**:
+   - **Protocol**: Select from REST, BACnet IP, Modbus TCP, or OPC-UA
+   - **Device Name**: Enter a descriptive name (e.g., "HVAC Controller")
+   - **IP Address**: Device's network address (e.g., 192.168.1.100)
+   - **Port**: Device's communication port (e.g., 502 for Modbus)
+   - **Documentation**: Upload device manual PDF (optional but recommended)
+
+3. **Click "Add Device"**: The system will automatically:
+   - Parse device documentation (if provided)
+   - Generate vector embeddings for intelligent matching
+   - Create device fingerprint for identification
+   - Establish connection and start monitoring
+
+### Method 2: Using the API
+
+```python
+import httpx
+
+# Add a new device via API
+async def add_device():
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://localhost:8081/api/devices", json={
+            "protocol": "modbus",
+            "name": "Schneider Electric PLC",
+            "ip": "192.168.1.100",
+            "port": 502,
+            "docs": "plc_manual.pdf"  # Optional
+        })
+        return response.json()
+
+# Usage
+device = await add_device()
+print(f"Added device: {device['device']['name']}")
+```
+
+### Method 3: Programmatic Integration
+
+```python
+from src.integration.mcp_dashboard_integration import MCPDashboardIntegration
+
+# Initialize integration
+integration = MCPDashboardIntegration()
+await integration.initialize()
+
+# Add device programmatically
+device = await integration.add_device(
+    protocol="bacnet",
+    name="Honeywell Thermostat",
+    ip="192.168.1.101",
+    port=47808,
+    docs="thermostat_manual.pdf"
+)
+
+print(f"Device added: {device['id']}")
+```
+
+### Supported Protocols
+
+| Protocol | Port | Description | Documentation Required |
+|----------|------|-------------|----------------------|
+| **REST API** | 8000-8999 | HTTP/JSON APIs | Optional - API endpoints |
+| **BACnet IP** | 47808 | Building automation | Recommended - Object definitions |
+| **Modbus TCP** | 502 | Industrial automation | Recommended - Register maps |
+| **OPC-UA** | 4840 | Machine-to-machine | Recommended - Node definitions |
+
+### Documentation Requirements
+
+#### For BACnet Devices:
+- **Object Definitions**: Analog Inputs (AI), Analog Values (AV), Binary Inputs (BI)
+- **Object Instances**: Instance numbers for each object
+- **Units**: Engineering units for analog values
+- **Error Codes**: Device-specific error codes and descriptions
+- **Network Configuration**: Device ID, network number, MAC address
+
+#### For Modbus Devices:
+- **Register Maps**: Input registers, holding registers, coils, discrete inputs
+- **Data Types**: Integer, float, boolean, string formats
+- **Scaling Factors**: Engineering unit conversions
+- **Error Codes**: Modbus exception codes and meanings
+- **Communication Settings**: Baud rate, parity, stop bits (for RTU)
+
+#### For REST APIs:
+- **Endpoint Documentation**: Available URLs and methods
+- **Request/Response Formats**: JSON schemas, data types
+- **Authentication**: API keys, tokens, headers
+- **Rate Limits**: Request frequency limitations
+- **Error Responses**: HTTP status codes and error messages
+
+### Adding Custom Protocols
+
+To add support for a completely new protocol:
+
+1. **Create Protocol Simulator**:
+   ```python
+   # simulators/custom_protocol_simulator.py
+   class CustomProtocolSimulator:
+       def __init__(self, port=9999):
+           self.port = port
+           self.devices = {}
+       
+       async def start(self):
+           # Implement protocol server
+           pass
+   ```
+
+2. **Add Protocol Knowledge**:
+   ```python
+   # src/core/protocol_knowledge.py
+   CUSTOM_PROTOCOL_SPEC = {
+       "name": "Custom Protocol",
+       "port": 9999,
+       "transport": "tcp",  # or "udp"
+       "message_format": "binary",  # or "text", "json"
+       "commands": {
+           "read": "0x01",
+           "write": "0x02",
+           "status": "0x03"
+       }
+   }
+   ```
+
+3. **Update MCP Server**:
+   ```python
+   # src/mcp_server.py
+   async def _implement_custom_protocol_dynamically(spec, device_address, device_spec):
+       # Implement protocol-specific logic
+       pass
+   ```
+
+4. **Add to Dashboard**:
+   ```html
+   <!-- dashboard/multi_protocol_dashboard.html -->
+   <option value="custom">Custom Protocol</option>
+   ```
+
+### Device Discovery
+
+The gateway can automatically discover devices on the network:
+
+```python
+# Automatic device discovery
+discovered_devices = await integration.discover_devices(
+    network_range="192.168.1.0/24",
+    protocols=["bacnet", "modbus", "rest"]
+)
+
+for device in discovered_devices:
+    print(f"Found {device['protocol']} device at {device['ip']}")
+```
+
+### Troubleshooting Device Connections
+
+1. **Check Network Connectivity**:
+   ```bash
+   ping 192.168.1.100
+   telnet 192.168.1.100 502  # For Modbus
+   ```
+
+2. **Verify Protocol Settings**:
+   - Port numbers match device configuration
+   - Protocol version compatibility
+   - Network security settings
+
+3. **Review Device Documentation**:
+   - Ensure PDF is properly formatted
+   - Check for required parameters
+   - Verify error code mappings
+
+4. **Check Gateway Logs**:
+   ```bash
+   # View MCP server logs
+   python src/mcp_server.py
+   
+   # View dashboard logs
+   python dashboard_server.py
+   ```
+
+### Best Practices
+
+1. **Documentation Quality**:
+   - Use high-quality PDFs with clear text
+   - Include complete parameter definitions
+   - Provide troubleshooting sections
+
+2. **Network Configuration**:
+   - Use static IP addresses for critical devices
+   - Configure proper firewall rules
+   - Monitor network latency
+
+3. **Testing**:
+   - Test with device simulators first
+   - Verify all parameters are accessible
+   - Check error handling scenarios
+
+4. **Security**:
+   - Use secure communication protocols
+   - Implement proper authentication
+   - Monitor for unauthorized access
 
 ## Hybrid Architecture Benefits
 
