@@ -20,10 +20,10 @@ class MCPDashboardIntegration:
     """Integrates the multi-protocol dashboard with the actual MCP server and device simulators"""
     
     def __init__(self):
-        self.mcp_server_url = "http://localhost:8000"  # MCP server URL
+        self.mcp_server_url = "http://localhost:8000"  # MCP server URL (stdio, not HTTP)
         self.rest_simulator_url = "http://localhost:8001"  # REST simulator URL
-        self.bacnet_simulator_url = "http://localhost:8002"  # BACnet simulator URL
-        self.modbus_simulator_url = "http://localhost:8003"  # Modbus simulator URL
+        self.bacnet_simulator_url = "http://localhost:47808"  # BACnet simulator URL
+        self.modbus_simulator_url = "http://localhost:502"  # Modbus simulator URL
         self.dashboard_url = "http://localhost:8081"  # Dashboard server URL
         
         # Device registry

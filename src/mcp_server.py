@@ -882,8 +882,8 @@ async def main():
     
     # Show model information
     model_info = local_ai_engine.get_model_info()
-    logger.info(f"Local AI models loaded: {model_info['models_loaded']}")
-    logger.info(f"Estimated memory usage: {model_info['estimated_memory_mb']:.1f} MB")
+    logger.info(f"Local AI models loaded: {model_info['total_models']}")
+    logger.info(f"Estimated memory usage: {model_info['total_size_kb']:.1f} KB")
     
     # Run the MCP server
     async with stdio_server() as (read_stream, write_stream):

@@ -153,7 +153,9 @@ Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenanc
 - **Cloud Context Service**: Free LLM integration with vector database
 - **Device Fingerprinting**: Network-based device identification and classification
 - **Vector Database**: Device documentation storage with similarity search
-- **Documentation-Driven Simulators**: AI-powered device simulation from specs
+- **Real PDF Parsing**: Extract device specs from actual PDF documentation using PyMuPDF, pdfplumber, and PyPDF2
+- **Advanced Vector Search**: Sentence transformer embeddings (all-MiniLM-L6-v2) with 384-dimensional vectors
+- **Documentation-Driven Simulators**: AI-powered device simulation from parsed PDF specs
 - **Multi-Protocol Dashboard**: Dynamic device management across all protocols
 - **Real MCP Integration**: Connected to actual MCP server and device simulators
 - **Web Dashboard**: Real-time monitoring with status indicators and AI query interface
@@ -162,8 +164,6 @@ Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenanc
 - **Modbus TCP Simulator**: Industrial automation protocol with Schneider Electric Modicon M580 PLC
 
 ### 🚧 **In Development**
-- **Real PDF Parsing**: Extract device specs from actual PDF documentation
-- **Advanced Vector Search**: Improved similarity algorithms and embeddings
 - **OPC-UA Simulator**: Machine-to-machine communication
 - **Device Discovery**: Automatic network scanning and device detection
 - **MCP Server HTTP Interface**: Currently stdio-based, needs HTTP wrapper
@@ -172,7 +172,7 @@ Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenanc
 - **Hybrid Architecture**: Edge AI + Cloud context for optimal performance
 - **Minimal Edge Resources**: 2.44 KB models, ~1ms inference time
 - **Rich Cloud Context**: Full device documentation and troubleshooting
-- **Vector Database Search**: Intelligent device matching from documentation
+- **Vector Database Search**: Intelligent device matching from documentation using sentence transformers
 - **Free LLM Integration**: No expensive API costs for device identification
 - **Offline Operation**: Cached contexts work without internet
 - **Real-time Data Streaming**: Live sensor data with 5-second intervals
@@ -193,6 +193,12 @@ Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenanc
 - **Documentation-Driven Simulator**: `python demo_documentation_driven.py` - AI-powered device simulation
 - **Hybrid Edge-Cloud**: `python demo_hybrid_architecture.py` - Complete hybrid architecture flow
 - **Cloud Context Service**: `python src/cloud/context_service.py` - Test cloud context retrieval
+
+### Real PDF Processing Demos
+- **PDF to Vector Flow**: `python demo_real_pdf_vector_flow.py` - Complete PDF → parsing → vectorizing → search pipeline
+- **Create Sample PDF**: `python create_sample_pdf.py` - Generate sample BACnet device manual
+- **PDF Parser Test**: `python src/pdf/pdf_parser.py` - Test PDF parsing functionality
+- **Vector Embedding Test**: `python src/vector/embedding_service.py` - Test sentence transformer embeddings
 
 ### Manual Setup
 1. **Start REST Simulator**: `python simulators/rest_simulator.py`
@@ -248,6 +254,17 @@ Dashboard ← API Response ← Cached Context ← Troubleshooting ← Maintenanc
 - **Multi-Protocol Dashboard**: `/api/devices`, `/api/ai/query`, `/api/mcp/real-status`
 - **BACnet Simulator**: UDP-based BACnet IP protocol
 - **Modbus Simulator**: TCP-based Modbus protocol
+
+### PDF Processing Capabilities
+- **Multi-Library Support**: PyMuPDF, pdfplumber, PyPDF2 for comprehensive text extraction
+- **Structured Data Extraction**: Device parameters, error codes, troubleshooting steps
+- **BACnet Object Parsing**: Automatic extraction of object types, instances, and properties
+- **Error Code Recognition**: Pattern-based extraction of error codes and descriptions
+- **Maintenance Schedule Parsing**: Automatic extraction of maintenance intervals and tasks
+- **Network Configuration**: IP addresses, ports, and protocol settings
+- **Sentence Transformer Embeddings**: 384-dimensional vectors using all-MiniLM-L6-v2 model
+- **Vector Similarity Search**: Cosine similarity for intelligent device matching
+- **Embedding Persistence**: Save/load embeddings for offline operation
 
 ### AI Query Types
 1. **Temperature**: "What's the current temperature?"

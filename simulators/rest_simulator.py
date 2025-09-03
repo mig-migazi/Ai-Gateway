@@ -379,7 +379,7 @@ if __name__ == "__main__":
     print("  GET  /api/room/{id}       - Room data")
     print("  GET  /api/room/{id}/temperature - Room temperature")
     print()
-    print("Access the API at: http://localhost:8000")
-    print("API documentation at: http://localhost:8000/docs")
+    print("Access the API at: http://localhost:8001")
+    print("API documentation at: http://localhost:8001/docs")
     
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)
